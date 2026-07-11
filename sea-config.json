@@ -1,0 +1,12 @@
+{
+  "main": "server.js",
+  "output": "dist/sea-prep.blob",
+  "disableExperimentalSEAWarning": true,
+  "assets": {
+    "index.html": "public/index.html",
+    "app.js": "public/app.js",
+    "styles.css": "public/styles.css",
+    "qrcode.js": "public/qrcode.js",
+    "qr.css": "public/qr.css"
+  }
+}
