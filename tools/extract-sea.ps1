@@ -1,5 +1,5 @@
 param(
-  [string]$Executable = (Join-Path $PSScriptRoot "..\lan-file-share.exe"),
+  [string]$Executable = (Join-Path $PSScriptRoot "..\dist\lan-file-share.exe"),
   [string]$OutputDirectory = (Join-Path $PSScriptRoot "..")
 )
 
