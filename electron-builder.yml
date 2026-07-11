@@ -1,0 +1,24 @@
+appId: com.goonruntongue.lanfileshare.electron
+productName: LAN File Share Electron
+asar: true
+npmRebuild: false
+directories:
+  output: dist/electron
+  buildResources: assets
+files:
+  - electron/**/*
+  - public/**/*
+  - server.js
+  - package.json
+  - LICENSE
+extraMetadata:
+  main: electron/main.js
+win:
+  icon: assets/app.ico
+  target:
+    - target: portable
+      arch:
+        - x64
+  artifactName: lan-file-share-electron.${ext}
+portable:
+  artifactName: lan-file-share-electron.${ext}

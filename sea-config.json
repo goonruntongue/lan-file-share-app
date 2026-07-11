@@ -6,6 +6,7 @@
     "index.html": "public/index.html",
     "app.js": "public/app.js",
     "styles.css": "public/styles.css",
+    "media-preview.css": "public/media-preview.css",
     "qrcode.js": "public/qrcode.js",
     "qr.css": "public/qr.css"
   }

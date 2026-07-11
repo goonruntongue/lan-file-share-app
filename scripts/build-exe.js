@@ -1,4 +1,4 @@
-const { copyFileSync, existsSync, mkdirSync, rmSync } = require("fs");
+const { copyFileSync, existsSync, mkdirSync, renameSync, rmSync } = require("fs");
 const { join } = require("path");
 const { spawnSync } = require("child_process");
 
@@ -10,9 +10,12 @@ const root = join(__dirname, "..");
 const dist = join(root, "dist");
 const blob = join(dist, "sea-prep.blob");
 const output = join(dist, "lan-file-share.exe");
+const brandedOutput = join(dist, "lan-file-share.branded.exe");
+const icon = join(root, "assets", "app.ico");
 const postject = join(root, "node_modules", "postject", "dist", "cli.js");
+const resedit = join(root, "node_modules", "resedit-cli", "dist", "cli.js");
 
-if (!existsSync(postject)) {
+if (!existsSync(postject) || !existsSync(resedit) || !existsSync(icon)) {
   throw new Error("依存関係がありません。先に npm install を実行してください。");
 }
 
@@ -34,5 +37,18 @@ result = spawnSync(process.execPath, [
 ], { cwd: root, stdio: "inherit" });
 if (result.status !== 0) process.exit(result.status ?? 1);
 
+rmSync(brandedOutput, { force: true });
+result = spawnSync(process.execPath, [
+  resedit,
+  output,
+  brandedOutput,
+  "--icon",
+  `1,${icon}`,
+  "--ignore-signed",
+], { cwd: root, stdio: "inherit" });
+if (result.status !== 0) process.exit(result.status ?? 1);
+
+rmSync(output, { force: true });
+renameSync(brandedOutput, output);
 rmSync(blob, { force: true });
 console.log("Created dist/lan-file-share.exe");

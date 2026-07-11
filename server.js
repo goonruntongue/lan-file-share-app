@@ -4,6 +4,7 @@ const fsp = require("fs/promises");
 const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
+const dgram = require("dgram");
 const { spawn } = require("child_process");
 let sea = null;
 try {
@@ -14,9 +15,10 @@ const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
 const IS_SEA = Boolean(sea && sea.isSea());
-const DATA_DIR = IS_SEA ? path.dirname(process.execPath) : ROOT;
-const SHARE_DIR = path.join(DATA_DIR, "shared");
+let DATA_DIR = IS_SEA ? path.dirname(process.execPath) : ROOT;
+let SHARE_DIR = path.join(DATA_DIR, "shared");
 let actualPort = PORT;
+let peerService = null;
 const clients = new Map();
 const CLIENT_TIMEOUT_MS = 45000;
 const SHUTDOWN_GRACE_MS = 15000;
@@ -30,6 +32,22 @@ const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "application/javascript; charset=utf-8",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".avif": "image/avif",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".mov": "video/quicktime",
+  ".m4v": "video/x-m4v",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
+  ".m4a": "audio/mp4",
+  ".aac": "audio/aac",
+  ".flac": "audio/flac",
 };
 function sendJson(res, status, body) {
   const data = JSON.stringify(body);
@@ -84,6 +102,90 @@ function addresses() {
   return [...new Set(all)].sort(
     (a, b) => Number(privateLan(b)) - Number(privateLan(a)),
   );
+}
+function createPeerDiscovery(servicePort) {
+  const multicastAddress = "239.255.42.99";
+  const discoveryPort = Number(process.env.LAN_SHARE_DISCOVERY_PORT || 41234);
+  const id = `${os.hostname()}-${process.pid}-${crypto.randomBytes(6).toString("hex")}`;
+  const machineName = String(
+    process.env.LAN_SHARE_MACHINE_NAME || os.hostname(),
+  ).slice(0, 100);
+  const peers = new Map();
+  const socket = dgram.createSocket({ type: "udp4", reuseAddr: true });
+  let ready = false;
+  const announcement = Buffer.from(
+    JSON.stringify({
+      app: "lan-file-share-electron",
+      version: 1,
+      id,
+      name: machineName,
+      port: servicePort,
+    }),
+  );
+  const announce = () => {
+    if (!ready) return;
+    socket.send(announcement, discoveryPort, multicastAddress, (error) => {
+      if (error) console.warn("LAN内PCの通知に失敗しました:", error.message);
+    });
+  };
+  socket.on("message", (message, remote) => {
+    try {
+      const peer = JSON.parse(message.toString("utf8"));
+      if (
+        peer.app !== "lan-file-share-electron" ||
+        peer.version !== 1 ||
+        peer.id === id ||
+        typeof peer.name !== "string" ||
+        !Number.isInteger(peer.port) ||
+        peer.port < 1 ||
+        peer.port > 65535
+      )
+        return;
+      peers.set(peer.id, {
+        id: peer.id,
+        name: peer.name.slice(0, 100),
+        address: remote.address,
+        port: peer.port,
+        url: `http://${remote.address}:${peer.port}`,
+        lastSeen: Date.now(),
+      });
+    } catch {}
+  });
+  socket.on("error", (error) =>
+    console.warn("LAN内PCの検出に失敗しました:", error.message),
+  );
+  socket.bind(discoveryPort, "0.0.0.0", () => {
+    try {
+      socket.addMembership(multicastAddress);
+      socket.setMulticastTTL(1);
+      ready = true;
+      announce();
+    } catch (error) {
+      console.warn("LAN内PCの検出を開始できませんでした:", error.message);
+    }
+  });
+  const announceTimer = setInterval(announce, 2000);
+  announceTimer.unref();
+  socket.unref();
+  return {
+    id,
+    name: machineName,
+    getPeers() {
+      const now = Date.now();
+      for (const [peerId, peer] of peers) {
+        if (now - peer.lastSeen > 8000) peers.delete(peerId);
+      }
+      return [...peers.values()]
+        .map(({ lastSeen, ...peer }) => peer)
+        .sort((a, b) => a.name.localeCompare(b.name, "ja"));
+    },
+    close() {
+      clearInterval(announceTimer);
+      try {
+        socket.close();
+      } catch {}
+    },
+  };
 }
 async function uniquePath(name) {
   const p = path.parse(name);
@@ -194,6 +296,82 @@ async function upload(req, res) {
     }
   });
 }
+async function servePreview(req, res, name) {
+  const target = safePath(name);
+  if (!target) return sendError(res, 403, "Forbidden");
+  try {
+    const stat = await fsp.stat(target);
+    const size = stat.size;
+    const headers = {
+      "content-type": MIME[path.extname(target).toLowerCase()] || "application/octet-stream",
+      "content-disposition": `inline; filename*=UTF-8''${encodeURIComponent(path.basename(target))}`,
+      "accept-ranges": "bytes",
+      "cache-control": "private, max-age=3600",
+    };
+    const range = req.headers.range;
+    if (!range) {
+      res.writeHead(200, { ...headers, "content-length": size });
+      return fs.createReadStream(target).pipe(res);
+    }
+    const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+    if (!match) return sendError(res, 416, "Invalid range");
+    let start;
+    let end;
+    if (match[1] === "") {
+      const suffixLength = Number(match[2]);
+      start = Math.max(0, size - suffixLength);
+      end = size - 1;
+    } else {
+      start = Number(match[1]);
+      end = match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
+    }
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start > end || start >= size) {
+      res.writeHead(416, { "content-range": `bytes */${size}` });
+      return res.end();
+    }
+    res.writeHead(206, {
+      ...headers,
+      "content-length": end - start + 1,
+      "content-range": `bytes ${start}-${end}/${size}`,
+    });
+    return fs.createReadStream(target, { start, end }).pipe(res);
+  } catch {
+    return sendError(res, 404, "File not found");
+  }
+}
+async function revealFile(res, name) {
+  const target = safePath(name);
+  if (!target) return sendError(res, 403, "Forbidden");
+  try {
+    const stat = await fsp.stat(target);
+    if (!stat.isFile()) return sendError(res, 404, "File not found");
+    if (process.platform !== "win32")
+      return sendError(res, 501, "This feature is available on Windows only");
+    if (process.env.OPEN_EXPLORER !== "0") {
+      const explorerPath = path.join(
+        process.env.SystemRoot || "C:\\Windows",
+        "explorer.exe",
+      );
+      try {
+        const child = spawn(explorerPath, ["/n,", "/select,", target], {
+          detached: true,
+          stdio: "ignore",
+        });
+        await new Promise((resolve, reject) => {
+          child.once("spawn", resolve);
+          child.once("error", reject);
+        });
+        child.unref();
+      } catch (error) {
+        console.error("Explorerを起動できませんでした:", error.message);
+        return sendError(res, 500, "エクスプローラーを起動できませんでした。");
+      }
+    }
+    return sendJson(res, 200, { ok: true });
+  } catch {
+    return sendError(res, 404, "File not found");
+  }
+}
 async function route(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   try {
@@ -218,11 +396,31 @@ async function route(req, res) {
     if (req.method === "GET" && url.pathname === "/api/info")
       return sendJson(res, 200, {
         port: actualPort,
+        machineName: process.env.LAN_SHARE_MACHINE_NAME || os.hostname(),
         networkUrls: addresses().map((a) => `http://${a}:${actualPort}`),
         sharedFolder: SHARE_DIR,
       });
+    if (req.method === "GET" && url.pathname === "/api/peers")
+      return sendJson(res, 200, {
+        enabled: Boolean(peerService),
+        self: peerService
+          ? { id: peerService.id, name: peerService.name, port: actualPort }
+          : null,
+        peers: peerService ? peerService.getPeers() : [],
+      });
     if (req.method === "POST" && url.pathname === "/api/upload")
       return await upload(req, res);
+    if (req.method === "GET" && url.pathname.startsWith("/preview/"))
+      return await servePreview(
+        req,
+        res,
+        decodeURIComponent(url.pathname.slice(9)),
+      );
+    if (req.method === "POST" && url.pathname.startsWith("/api/reveal/"))
+      return await revealFile(
+        res,
+        decodeURIComponent(url.pathname.slice(12)),
+      );
     if (req.method === "GET" && url.pathname.startsWith("/files/")) {
       const target = safePath(decodeURIComponent(url.pathname.slice(7)));
       try {
@@ -259,19 +457,24 @@ function openBrowser(url) {
   });
   child.unref();
 }
-async function main() {
+async function startServer(options = {}) {
+  const basePort = Number(options.port || PORT);
+  if (options.dataDirectory) {
+    DATA_DIR = path.resolve(options.dataDirectory);
+    SHARE_DIR = path.join(DATA_DIR, "shared");
+  }
   await fsp.mkdir(SHARE_DIR, { recursive: true });
   const server = http.createServer(route);
   for (let i = 0; i < 20; i++) {
     try {
       await new Promise((ok, ng) => {
         server.once("error", ng);
-        server.listen(PORT + i, "0.0.0.0", () => {
+        server.listen(basePort + i, "0.0.0.0", () => {
           server.removeListener("error", ng);
           ok();
         });
       });
-      actualPort = PORT + i;
+      actualPort = basePort + i;
       break;
     } catch (e) {
       if (e.code !== "EADDRINUSE" || i === 19) throw e;
@@ -283,12 +486,13 @@ async function main() {
       : `http://localhost:${actualPort}`;
   console.log(`LAN File Share: ${url}`);
   console.log(`Shared folder: ${SHARE_DIR}`);
-  setInterval(() => {
+  if (options.peerDiscovery) peerService = createPeerDiscovery(actualPort);
+  const maintenanceTimer = setInterval(() => {
     const now = Date.now();
     for (const [id, seenAt] of clients) {
       if (now - seenAt > CLIENT_TIMEOUT_MS) clients.delete(id);
     }
-    if (hasConnectedClient && clients.size === 0) {
+    if (options.autoShutdown !== false && hasConnectedClient && clients.size === 0) {
       noClientSince ??= now;
       if (now - noClientSince >= SHUTDOWN_GRACE_MS) {
         console.log("ブラウザ接続が終了したため、サーバーを停止します。");
@@ -299,9 +503,28 @@ async function main() {
       noClientSince = null;
     }
   }, 2000).unref();
-  openBrowser(url);
+  if (options.openBrowser !== false) openBrowser(url);
+  return {
+    server,
+    port: actualPort,
+    url,
+    localUrl: `http://127.0.0.1:${actualPort}`,
+    sharedFolder: SHARE_DIR,
+    close() {
+      clearInterval(maintenanceTimer);
+      peerService?.close();
+      peerService = null;
+      return new Promise((resolve) => server.close(resolve));
+    },
+  };
 }
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+module.exports = { startServer };
+
+if (require.main === module || IS_SEA) {
+  startServer({
+    peerDiscovery: process.env.ENABLE_PEER_DISCOVERY === "1",
+  }).catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}

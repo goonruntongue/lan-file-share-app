@@ -17,11 +17,24 @@ npm start
 
 ```powershell
 npm install
-npm run build:exe
+npm run build:node
 ```
 
 生成先は `dist/lan-file-share.exe` です。Node.jsのSingle Executable Application（SEA）方式を使うため、実行時のNode.jsインストールは不要です。
 Windowsのコード署名を使う場合は、SEAリソースの注入後に生成したEXEへ署名してください。
+
+## Electron版
+
+Electron版を同一LAN内の複数PCで起動すると、各PCを自動検出します。画面上のPC名を選ぶだけで相手PCの共有ファイルへ接続でき、IPアドレスの手入力は不要です。スマートフォンからは従来どおりQRコードで接続します。
+
+開発実行とポータブルEXEの生成:
+
+```powershell
+npm run start:electron
+npm run build:electron
+```
+
+Electron版の生成先は `dist/electron/lan-file-share-electron.exe` です。共有フォルダーはポータブルEXEと同じ場所に作成されます。初回起動時にWindowsファイアウォールの確認が表示された場合は、プライベートネットワークでの通信を許可してください。
 
 ## 復元元
 

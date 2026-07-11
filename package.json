@@ -1,15 +1,22 @@
 {
   "name": "lan-file-share-app",
   "version": "1.0.0",
+  "author": "goonruntongue",
   "private": true,
-  "description": "A dependency-free LAN file sharing app for Windows and modern browsers.",
+  "description": "A LAN file sharing app with standalone Node.js and auto-discovering Electron editions.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build:exe": "node scripts/build-exe.js"
+    "start:electron": "electron electron/main.js",
+    "build:exe": "node scripts/build-exe.js",
+    "build:node": "node scripts/build-exe.js",
+    "build:electron": "node scripts/build-electron.js"
   },
   "devDependencies": {
-    "postject": "^1.0.0-alpha.6"
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
+    "postject": "^1.0.0-alpha.6",
+    "resedit-cli": "^3.1.0"
   },
   "engines": {
     "node": ">=22.23.1 <23"
