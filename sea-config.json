@@ -9,5 +9,7 @@
     "media-preview.css": "public/media-preview.css",
     "qrcode.js": "public/qrcode.js",
     "qr.css": "public/qr.css"
+    ,"light-theme.css": "public/light-theme.css"
+    ,"lime-light.css": "public/lime-light.css"
   }
 }

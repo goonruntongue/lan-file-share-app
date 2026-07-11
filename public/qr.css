@@ -1,1 +1,6 @@
-.connection{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:22px}.qr-panel{text-align:center}.qr-panel #qrCode{display:grid;place-items:center;min-height:170px;margin-top:8px}.qr-panel svg{width:170px;height:170px}.qr-panel #qrUrl{font-size:11px;color:var(--muted);overflow-wrap:anywhere}@media(max-width:640px){.connection{grid-template-columns:1fr}.qr-panel{padding-top:12px;border-top:1px solid var(--line)}}
+.qr-panel { align-self: center; padding: 14px; background: rgba(6, 13, 29, .88); text-align: center; }
+.qr-panel > b { font-size: 10px; letter-spacing: .17em; }
+.qr-panel #qrCode { display: grid; place-items: center; min-height: 150px; margin-top: 8px; }
+.qr-panel svg { width: 145px; height: 145px; padding: 7px; background: #fff; }
+.qr-panel #qrUrl { max-width: 180px; margin: 6px auto 0; color: #8fa7d2; font-size: 9px; overflow-wrap: anywhere; }
+@media (max-width: 700px) { .qr-panel { width: min(220px, 100%); justify-self: center; } }

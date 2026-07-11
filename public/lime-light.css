@@ -1,0 +1,208 @@
+/* lime-light: 建築・ものづくり系の明快さを、人物写真なしで再構成したテーマ */
+html[data-theme="lime-light"] {
+  color-scheme: light;
+  --bg: #f3f4ee;
+  --surface: #ffffff;
+  --surface-2: #eef1e9;
+  --ink: #162027;
+  --muted: #66716d;
+  --line: #cfd7cf;
+  --accent: #00d51b;
+  --accent-2: #00a918;
+  --danger: #d43b32;
+}
+html[data-theme="lime-light"] body {
+  background:
+    repeating-linear-gradient(135deg, transparent 0 18px, rgba(19,39,29,.025) 18px 19px),
+    #f3f4ee;
+  color: var(--ink);
+}
+html[data-theme="lime-light"] body::before {
+  opacity: .25;
+  background-image: linear-gradient(rgba(22,32,39,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(22,32,39,.04) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: linear-gradient(to bottom, #000, transparent 84%);
+}
+html[data-theme="lime-light"] .app { width: min(1180px, calc(100% - 48px)); }
+html[data-theme="lime-light"] header {
+  min-height: 224px;
+  overflow: hidden;
+  border-top: 8px solid var(--accent);
+  border-bottom: 0;
+  background: linear-gradient(112deg, #fafbf6 0 67%, #e4eadf 67%);
+}
+html[data-theme="lime-light"] header::before {
+  content: "RECRUIT / SHARE";
+  position: absolute;
+  right: -58px;
+  top: 73px;
+  transform: rotate(90deg);
+  color: var(--accent-2);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+html[data-theme="lime-light"] header::after {
+  right: 10%;
+  bottom: -170px;
+  width: 390px;
+  height: 330px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, rgba(0,213,27,.08), rgba(0,213,27,.32));
+}
+html[data-theme="lime-light"] .brand-mark {
+  width: 62px;
+  height: 62px;
+  border-radius: 0;
+  transform: none;
+  clip-path: none;
+  background: var(--ink);
+  color: var(--accent);
+  box-shadow: 8px 8px 0 rgba(0, 213, 27, .22);
+  font-family: Arial, "Segoe UI", sans-serif;
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1;
+}
+html[data-theme="lime-light"] .brand-copy small,
+html[data-theme="lime-light"] .section-kicker { color: var(--accent-2); }
+html[data-theme="lime-light"] h1 {
+  color: var(--accent);
+  font-size: clamp(46px, 7.5vw, 82px);
+  line-height: .9;
+  letter-spacing: -.075em;
+}
+html[data-theme="lime-light"] h1 em,
+html[data-theme="lime-light"] .dropzone em {
+  color: var(--ink);
+  font-family: inherit;
+  font-style: normal;
+  font-weight: 900;
+}
+html[data-theme="lime-light"] .brand-copy > p { margin-top: 17px; color: #445048; font-weight: 700; }
+html[data-theme="lime-light"] #refreshButton {
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  box-shadow: none;
+}
+html[data-theme="lime-light"] .theme-switcher { border-color: #bfc9c0; background: rgba(255,255,255,.88); }
+html[data-theme="lime-light"] .theme-option { border: 0; background: transparent; color: #647068; box-shadow: none; }
+html[data-theme="lime-light"] .theme-option[aria-checked="true"] { background: var(--accent-2); color: #fff; }
+html[data-theme="lime-light"] button,
+html[data-theme="lime-light"] a {
+  border-color: #c5cec6;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: none;
+}
+html[data-theme="lime-light"] button:hover,
+html[data-theme="lime-light"] a:hover { border-color: var(--accent-2); }
+html[data-theme="lime-light"] .info {
+  min-height: 248px;
+  overflow: hidden;
+  border: 0;
+  border-top: 6px solid var(--ink);
+  background: linear-gradient(110deg, #fff 0 58%, #dfffdb 58%);
+  box-shadow: 0 15px 40px rgba(25,48,31,.08);
+}
+html[data-theme="lime-light"] .info::before {
+  content: "NETWORK";
+  position: absolute;
+  left: 34%;
+  bottom: -32px;
+  color: rgba(0,213,27,.12);
+  font-size: 115px;
+  font-weight: 900;
+  letter-spacing: -.08em;
+}
+html[data-theme="lime-light"] .info::after {
+  right: 23%;
+  bottom: -145px;
+  width: 300px;
+  height: 300px;
+  border: 0;
+  border-radius: 0;
+  transform: rotate(45deg);
+  background: rgba(0,213,27,.13);
+}
+html[data-theme="lime-light"] .info-index { top: -37px; color: rgba(0,169,24,.11); font-family: inherit; font-style: normal; font-weight: 900; }
+html[data-theme="lime-light"] .connection-data b { color: #66716d; opacity: 1; }
+html[data-theme="lime-light"] .info p { color: var(--ink); }
+html[data-theme="lime-light"] #networkUrls { color: var(--accent-2); }
+html[data-theme="lime-light"] #sharedFolder { color: #59645e; opacity: 1; }
+html[data-theme="lime-light"] .qr-panel {
+  border: 7px solid var(--accent);
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 13px 13px 0 var(--ink);
+}
+html[data-theme="lime-light"] .qr-panel #qrUrl { color: #637069; }
+html[data-theme="lime-light"] .dropzone {
+  min-height: 248px;
+  border: 0;
+  border-top: 6px solid var(--accent);
+  border-bottom: 1px solid #cbd4cc;
+  background: linear-gradient(112deg, #fff 0 64%, #e8f5e5 64%);
+  box-shadow: 0 12px 35px rgba(25,48,31,.06);
+}
+html[data-theme="lime-light"] .dropzone::before,
+html[data-theme="lime-light"] .dropzone::after { border-radius: 0; background: rgba(0,213,27,.12); }
+html[data-theme="lime-light"] .dropzone:hover { border-color: var(--accent-2); background: linear-gradient(112deg, #fff 0 64%, #dcf6d7 64%); }
+html[data-theme="lime-light"] .drop-index { color: var(--accent-2); }
+html[data-theme="lime-light"] .upload-symbol { border-radius: 50%; background: var(--accent); color: #fff; }
+html[data-theme="lime-light"] .status { border-top-color: var(--accent); background: #fff; }
+html[data-theme="lime-light"] .heading h2 { color: var(--ink); }
+html[data-theme="lime-light"] #fileCount { color: var(--accent-2); }
+html[data-theme="lime-light"] .bulkbar {
+  border: 1px solid #cfd7cf;
+  border-top: 5px solid var(--ink);
+  background: #fff;
+  box-shadow: none;
+}
+html[data-theme="lime-light"] .bulk-download { border-color: var(--accent-2); background: var(--accent-2); color: #fff; }
+html[data-theme="lime-light"] .bulk-delete { color: var(--danger); }
+html[data-theme="lime-light"] .file-row {
+  border-color: #d2dad3;
+  border-radius: 0 14px 0 14px;
+  background: linear-gradient(100deg, #fff, #f3f8f1);
+  box-shadow: 0 6px 18px rgba(28,51,33,.045);
+}
+html[data-theme="lime-light"] .file-row:hover { border-color: #7fbd84; }
+html[data-theme="lime-light"] .details { color: #6d7871; }
+html[data-theme="lime-light"] .path { color: #7b867f; }
+html[data-theme="lime-light"] .actions a { border-color: var(--accent-2); background: var(--accent-2); color: #fff; }
+html[data-theme="lime-light"] .delete-file { color: var(--danger); }
+html[data-theme="lime-light"] .empty { border-color: #d2dad3; background: #fff; color: #6d7871; }
+html[data-theme="lime-light"] .media-preview { background: #e3f2df; color: var(--accent-2); }
+html[data-theme="lime-light"] .protected-preview { background: #fff1cc; color: #8d6100; }
+html[data-theme="lime-light"] .sort-control { color: #6d7871; }
+html[data-theme="lime-light"] .sort-control select { border-color: #c5cec6; background: #fff; color: var(--ink); }
+html[data-theme="lime-light"] .password-modal-overlay { background: rgba(235,241,232,.88); }
+html[data-theme="lime-light"] .password-modal {
+  border: 0;
+  border-top: 7px solid var(--accent);
+  border-radius: 0 18px 0 18px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 24px 70px rgba(27,54,32,.18);
+}
+html[data-theme="lime-light"] .password-field input { border-color: #c5cec6; background: #f5f8f3; color: var(--ink); }
+html[data-theme="lime-light"] .modal-submit { border-color: var(--accent-2); background: var(--accent-2); color: #fff; }
+html[data-theme="lime-light"] .peer-panel { border-bottom-color: rgba(22,32,39,.16); }
+html[data-theme="lime-light"] .peer-panel > span,
+html[data-theme="lime-light"] .peer-waiting { color: #66716d; }
+html[data-theme="lime-light"] .peer-button { border-color: #bdc9bf; background: #fff; color: var(--ink); }
+html[data-theme="lime-light"] .peer-button.current { border-color: var(--accent-2); background: var(--accent-2); color: #fff; }
+
+@media (max-width: 700px) {
+  html[data-theme="lime-light"] header { min-height: 255px; }
+  html[data-theme="lime-light"] h1 { font-size: clamp(40px, 13vw, 60px); }
+  html[data-theme="lime-light"] .connection-data { min-width: 0; }
+  html[data-theme="lime-light"] #sharedFolder { display: block; max-width: 100%; word-break: break-all; }
+  html[data-theme="lime-light"] .heading { width: 100%; align-items: stretch; flex-direction: column; }
+  html[data-theme="lime-light"] .list-tools { width: 100%; align-items: stretch; flex-direction: column; }
+  html[data-theme="lime-light"] .sort-control { min-width: 0; }
+  html[data-theme="lime-light"] .sort-control select { width: min(220px, 62vw); }
+}

@@ -1,0 +1,227 @@
+/*
+ * Theme registry
+ * dark-theme  : styles.css / media-preview.css / qr.css の標準デザイン
+ * light-theme : 本ファイルの明色デザイン
+ * 将来は html[data-theme="theme-name"] の値を選択UIから変更する。
+ */
+html[data-theme="light-theme"] {
+  color-scheme: light;
+  --bg: #f7f9fa;
+  --surface: #ffffff;
+  --surface-2: #f0f4f5;
+  --ink: #101315;
+  --muted: #647077;
+  --line: #d7dfe2;
+  --accent: #b51d18;
+  --accent-2: #02a9c2;
+  --danger: #b51d18;
+}
+html[data-theme="light-theme"] body {
+  background:
+    linear-gradient(45deg, transparent 0 70%, rgba(2,169,194,.07) 70% 70.5%, transparent 70.5%),
+    linear-gradient(135deg, transparent 0 20%, rgba(181,29,24,.035) 20% 20.4%, transparent 20.4%),
+    #f7f9fa;
+  color: var(--ink);
+}
+html[data-theme="light-theme"] body::before {
+  opacity: .42;
+  background-image:
+    linear-gradient(rgba(18,40,44,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18,40,44,.045) 1px, transparent 1px);
+  mask-image: linear-gradient(to bottom, #000 0 70%, transparent);
+}
+html[data-theme="light-theme"] .app { width: min(1180px, calc(100% - 48px)); }
+html[data-theme="light-theme"] header {
+  min-height: 205px;
+  overflow: visible;
+  border-top: 3px solid var(--accent);
+  border-bottom: 1px solid #cfd8dc;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.97) 0 63%, rgba(225,248,250,.88)),
+    #fff;
+}
+html[data-theme="light-theme"] header::before {
+  content: "";
+  position: absolute;
+  right: 15%;
+  top: -3px;
+  width: 240px;
+  height: 160px;
+  border-top: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+  transform: skewX(44deg);
+  opacity: .9;
+}
+html[data-theme="light-theme"] header::after {
+  right: -30px;
+  bottom: -88px;
+  width: 420px;
+  height: 220px;
+  transform: skewX(-38deg);
+  background: linear-gradient(90deg, rgba(0,177,201,.05), rgba(0,177,201,.26));
+}
+html[data-theme="light-theme"] .brand-mark {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  transform: none;
+  background: var(--accent);
+  color: #fff;
+}
+html[data-theme="light-theme"] .brand-copy small,
+html[data-theme="light-theme"] .section-kicker { color: var(--accent); }
+html[data-theme="light-theme"] h1 {
+  color: #0c1012;
+  font-size: clamp(42px, 7vw, 76px);
+  letter-spacing: -.07em;
+}
+html[data-theme="light-theme"] h1 em,
+html[data-theme="light-theme"] .dropzone em { color: var(--accent); }
+html[data-theme="light-theme"] h1 em {
+  display: inline-block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -.045em;
+  transform: skewX(-4deg);
+}
+html[data-theme="light-theme"] .dropzone em {
+  display: inline-block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -.035em;
+  transform: skewX(-4deg);
+}
+html[data-theme="light-theme"] .brand-copy > p { color: #445158; }
+html[data-theme="light-theme"] #refreshButton {
+  border-color: #aab7bc;
+  background: rgba(255,255,255,.82);
+  color: var(--ink);
+}
+html[data-theme="light-theme"] .theme-switcher { border-color: #c8d3d7; background: rgba(255,255,255,.88); }
+html[data-theme="light-theme"] .theme-option { border: 0; background: transparent; color: #69777d; box-shadow: none; }
+html[data-theme="light-theme"] .theme-option[aria-checked="true"] { background: var(--accent); color: #fff; }
+html[data-theme="light-theme"] button,
+html[data-theme="light-theme"] a {
+  border-color: #cbd5d9;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 5px 18px rgba(28,49,56,.06);
+}
+html[data-theme="light-theme"] button:hover,
+html[data-theme="light-theme"] a:hover { border-color: var(--accent-2); }
+html[data-theme="light-theme"] .info {
+  overflow: visible;
+  border-top: 1px solid #d3dce0;
+  border-bottom: 4px solid var(--accent);
+  background:
+    linear-gradient(118deg, #fff 0 61%, rgba(212,246,249,.93) 61%),
+    #fff;
+  box-shadow: 0 18px 50px rgba(23,58,66,.09);
+}
+html[data-theme="light-theme"] .info::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 56%;
+  top: -28px;
+  width: 180px;
+  height: 280px;
+  border-left: 1px solid rgba(2,169,194,.28);
+  transform: rotate(-38deg);
+}
+html[data-theme="light-theme"] .info::after { border-color: rgba(2,169,194,.16); }
+html[data-theme="light-theme"] .info-index { color: rgba(181,29,24,.08); }
+html[data-theme="light-theme"] .connection-data b { color: #606d72; opacity: 1; }
+html[data-theme="light-theme"] .info p { color: var(--ink); }
+html[data-theme="light-theme"] #networkUrls { color: var(--accent-2); }
+html[data-theme="light-theme"] #sharedFolder { color: #596a70; opacity: 1; }
+html[data-theme="light-theme"] .qr-panel {
+  background: #111719;
+  color: #fff;
+  box-shadow: 15px 15px 0 rgba(2,169,194,.13);
+}
+html[data-theme="light-theme"] .dropzone {
+  border: 1px solid #cfdadd;
+  background:
+    linear-gradient(128deg, rgba(255,255,255,.98) 0 68%, rgba(217,246,249,.95) 68%),
+    #fff;
+  box-shadow: 0 13px 40px rgba(31,67,75,.06);
+}
+html[data-theme="light-theme"] .dropzone::before { background: rgba(181,29,24,.09); }
+html[data-theme="light-theme"] .dropzone::after { background: rgba(2,169,194,.12); }
+html[data-theme="light-theme"] .dropzone:hover {
+  border-color: var(--accent-2);
+  background: linear-gradient(128deg, #fff 0 68%, #d8f6f8 68%);
+}
+html[data-theme="light-theme"] .upload-symbol { background: var(--accent); color: #fff; }
+html[data-theme="light-theme"] .drop-index { color: var(--accent); }
+html[data-theme="light-theme"] .status {
+  border-top-color: var(--accent);
+  background: #fff;
+  box-shadow: 0 8px 25px rgba(31,67,75,.08);
+}
+html[data-theme="light-theme"] .heading h2 { color: #111719; }
+html[data-theme="light-theme"] #fileCount { color: var(--accent); }
+html[data-theme="light-theme"] .bulkbar {
+  border-color: #d5dfe2;
+  border-bottom: 3px solid #111719;
+  background: #fff;
+  box-shadow: 0 8px 25px rgba(31,67,75,.05);
+}
+html[data-theme="light-theme"] .bulk-download {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+html[data-theme="light-theme"] .bulk-delete { color: var(--accent); }
+html[data-theme="light-theme"] .file-row {
+  border-color: #d5dfe2;
+  background: linear-gradient(100deg, #fff, #f5fafb);
+  box-shadow: 0 8px 24px rgba(24,55,62,.055);
+}
+html[data-theme="light-theme"] .file-row:hover { border-color: #8ebec6; }
+html[data-theme="light-theme"] .details { color: #68767c; }
+html[data-theme="light-theme"] .path { color: #7d898e; }
+html[data-theme="light-theme"] .actions a {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+html[data-theme="light-theme"] .delete-file { color: var(--accent); }
+html[data-theme="light-theme"] .empty { border-color: #d5dfe2; background: #fff; color: #68767c; }
+html[data-theme="light-theme"] .media-preview { background: #e6f2f4; color: var(--accent-2); }
+html[data-theme="light-theme"] .protected-preview { background: #fff5df; color: #8b6000; }
+html[data-theme="light-theme"] .sort-control { color: #68767c; }
+html[data-theme="light-theme"] .sort-control select {
+  border-color: #cbd5d9;
+  background: #fff;
+  color: var(--ink);
+}
+html[data-theme="light-theme"] .password-modal-overlay { background: rgba(235,242,244,.82); }
+html[data-theme="light-theme"] .password-modal {
+  border-color: #cbd5d9;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 24px 80px rgba(27,54,61,.2);
+}
+html[data-theme="light-theme"] .password-field input { border-color: #cbd5d9; background: #f8fafb; color: var(--ink); }
+html[data-theme="light-theme"] .modal-submit { border-color: var(--accent); background: var(--accent); color: #fff; }
+html[data-theme="light-theme"] .peer-panel { border-bottom-color: rgba(15,34,38,.15); }
+html[data-theme="light-theme"] .peer-panel > span,
+html[data-theme="light-theme"] .peer-waiting { color: #66777d; }
+html[data-theme="light-theme"] .peer-button { border-color: #b7c8cc; background: rgba(255,255,255,.7); color: #172124; }
+html[data-theme="light-theme"] .peer-button.current { border-color: var(--accent); background: var(--accent); color: #fff; }
+
+@media (max-width: 700px) {
+  html[data-theme="light-theme"] header { min-height: 255px; overflow: hidden; }
+  html[data-theme="light-theme"] .info { overflow: hidden; }
+  html[data-theme="light-theme"] h1 { font-size: clamp(38px, 12vw, 58px); }
+  html[data-theme="light-theme"] .connection-data { min-width: 0; }
+  html[data-theme="light-theme"] #sharedFolder { display: block; max-width: 100%; word-break: break-all; }
+  html[data-theme="light-theme"] .heading { width: 100%; align-items: stretch; flex-direction: column; }
+  html[data-theme="light-theme"] .list-tools { width: 100%; align-items: stretch; flex-direction: column; }
+  html[data-theme="light-theme"] .sort-control { min-width: 0; }
+  html[data-theme="light-theme"] .sort-control select { width: min(220px, 62vw); }
+}

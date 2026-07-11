@@ -10,6 +10,35 @@ const q = (s) => document.querySelector(s),
 let currentFiles = [];
 let isOwner = false;
 let renderedFilesSignature = "";
+const themeNames = ["dark-theme", "light-theme", "lime-light"];
+const themeButtons = [...document.querySelectorAll(".theme-option")];
+function applyTheme(theme, persist = true) {
+  const selectedTheme = themeNames.includes(theme) ? theme : "lime-light";
+  document.documentElement.dataset.theme = selectedTheme;
+  for (const button of themeButtons) {
+    const selected = button.dataset.themeValue === selectedTheme;
+    button.setAttribute("aria-checked", String(selected));
+    button.tabIndex = selected ? 0 : -1;
+  }
+  if (persist) {
+    try { localStorage.setItem("lanShareTheme", selectedTheme); } catch {}
+  }
+}
+let savedTheme = "";
+try { savedTheme = localStorage.getItem("lanShareTheme") || ""; } catch {}
+applyTheme(savedTheme || document.documentElement.dataset.theme, false);
+for (const button of themeButtons) {
+  button.onclick = () => applyTheme(button.dataset.themeValue);
+  button.onkeydown = (event) => {
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault();
+    const currentIndex = themeButtons.indexOf(button);
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    const next = themeButtons[(currentIndex + direction + themeButtons.length) % themeButtons.length];
+    applyTheme(next.dataset.themeValue);
+    next.focus();
+  };
+}
 const sortOrder = document.createElement("select");
 const sortOptions = [
   ["newest", "更新日時：新しい順"],
