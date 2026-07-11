@@ -118,6 +118,7 @@ function addPreview(container, file) {
     let segmentIndex = 0;
     let duration = 0;
     let segmentStarts = [0];
+    let thumbnailTime = 0;
     video.src = url;
     video.muted = true;
     video.playsInline = true;
@@ -126,6 +127,10 @@ function addPreview(container, file) {
     video.addEventListener("loadedmetadata", () => {
       duration = Number.isFinite(video.duration) ? video.duration : 0;
       segmentStarts = [0, duration * 0.25, duration * 0.5, duration * 0.75];
+      thumbnailTime = duration * 0.5;
+      if (!previewing && thumbnailTime > 0) {
+        try { video.currentTime = thumbnailTime; } catch {}
+      }
     }, { once: true });
     const advanceSegment = () => {
       segmentIndex += 1;
@@ -157,7 +162,7 @@ function addPreview(container, file) {
     container.onmouseleave = () => {
       previewing = false;
       video.pause();
-      video.currentTime = 0;
+      video.currentTime = thumbnailTime;
     };
     container.append(video);
     return;
