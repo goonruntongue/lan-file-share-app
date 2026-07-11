@@ -3,7 +3,7 @@ productName: LAN File Share Electron
 asar: true
 npmRebuild: false
 directories:
-  output: dist/electron
+  output: dist/electron-version
   buildResources: assets
 files:
   - electron/**/*

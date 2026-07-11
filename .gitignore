@@ -1,6 +1,6 @@
 node_modules/
 shared/
 *.log
-dist/electron/win-unpacked/
-dist/electron/shared/
-dist/electron/builder-debug.yml
+dist/electron-version/win-unpacked/
+dist/electron-version/shared/
+dist/electron-version/builder-debug.yml

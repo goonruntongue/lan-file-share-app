@@ -7,7 +7,7 @@ if (process.platform !== "win32") {
 }
 
 const root = join(__dirname, "..");
-const dist = join(root, "dist");
+const dist = join(root, "dist", "node-version");
 const blob = join(dist, "sea-prep.blob");
 const output = join(dist, "lan-file-share.exe");
 const brandedOutput = join(dist, "lan-file-share.branded.exe");
@@ -51,4 +51,4 @@ if (result.status !== 0) process.exit(result.status ?? 1);
 rmSync(output, { force: true });
 renameSync(brandedOutput, output);
 rmSync(blob, { force: true });
-console.log("Created dist/lan-file-share.exe");
+console.log("Created dist/node-version/lan-file-share.exe");

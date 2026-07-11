@@ -20,7 +20,7 @@ npm install
 npm run build:node
 ```
 
-生成先は `dist/lan-file-share.exe` です。Node.jsのSingle Executable Application（SEA）方式を使うため、実行時のNode.jsインストールは不要です。
+生成先は `dist/node-version/lan-file-share.exe` です。Node.jsのSingle Executable Application（SEA）方式を使うため、実行時のNode.jsインストールは不要です。
 Windowsのコード署名を使う場合は、SEAリソースの注入後に生成したEXEへ署名してください。
 
 ## Electron版
@@ -34,11 +34,11 @@ npm run start:electron
 npm run build:electron
 ```
 
-Electron版の生成先は `dist/electron/lan-file-share-electron.exe` です。共有フォルダーはポータブルEXEと同じ場所に作成されます。初回起動時にWindowsファイアウォールの確認が表示された場合は、プライベートネットワークでの通信を許可してください。
+Electron版の生成先は `dist/electron-version/lan-file-share-electron.exe` です。共有フォルダーはポータブルEXEと同じ場所に作成されます。初回起動時にWindowsファイアウォールの確認が表示された場合は、プライベートネットワークでの通信を許可してください。
 
 ## 復元元
 
-このプロジェクトのソースは、同梱の `dist/lan-file-share.exe` のSEAリソースから抽出しました。再抽出が必要な場合は以下を実行できます。
+このプロジェクトのソースは、同梱の `dist/node-version/lan-file-share.exe` のSEAリソースから抽出しました。再抽出が必要な場合は以下を実行できます。
 
 ```powershell
 .\tools\extract-sea.ps1
