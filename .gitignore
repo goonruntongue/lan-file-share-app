@@ -1,6 +1,10 @@
 node_modules/
 shared/
 *.log
+**/.lan-file-share-key.pem
+**/.lan-file-share-cert.pem
 dist/electron-version/win-unpacked/
+dist/electron-version/win-unpacked.tmp/
+dist/electron-build-tmp/
 dist/electron-version/shared/
 dist/electron-version/builder-debug.yml

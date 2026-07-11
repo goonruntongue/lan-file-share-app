@@ -13,7 +13,7 @@ let renderedFilesSignature = "";
 const themeNames = ["dark-theme", "light-theme", "lime-light"];
 const themeButtons = [...document.querySelectorAll(".theme-option")];
 function applyTheme(theme, persist = true) {
-  const selectedTheme = themeNames.includes(theme) ? theme : "lime-light";
+  const selectedTheme = themeNames.includes(theme) ? theme : "light-theme";
   document.documentElement.dataset.theme = selectedTheme;
   for (const button of themeButtons) {
     const selected = button.dataset.themeValue === selectedTheme;
