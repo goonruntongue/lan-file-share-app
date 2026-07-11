@@ -16,8 +16,6 @@ const PUBLIC_DIR = path.join(ROOT, "public");
 const IS_SEA = Boolean(sea && sea.isSea());
 const DATA_DIR = IS_SEA ? path.dirname(process.execPath) : ROOT;
 const SHARE_DIR = path.join(DATA_DIR, "shared");
-const MAX_UPLOAD_BYTES =
-  Number(process.env.MAX_UPLOAD_MB || 5120) * 1024 * 1024;
 let actualPort = PORT;
 const clients = new Map();
 const CLIENT_TIMEOUT_MS = 45000;
@@ -167,10 +165,6 @@ async function upload(req, res) {
   const name = sanitize(
     decodeURIComponent(String(req.headers["x-file-name"] || "")),
   );
-  if (Number(req.headers["content-length"] || 0) > MAX_UPLOAD_BYTES) {
-    sendError(res, 413, "ファイルが大きすぎます。");
-    return;
-  }
   await fsp.mkdir(SHARE_DIR, { recursive: true });
   const temp = path.join(
     SHARE_DIR,
