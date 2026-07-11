@@ -8,6 +8,7 @@ const q = (s) => document.querySelector(s),
   bulkDownload = q("#bulkDownload"),
   bulkDelete = q("#bulkDelete");
 let currentFiles = [];
+let isOwner = false;
 let renderedFilesSignature = "";
 const sortOrder = document.createElement("select");
 const sortOptions = [
@@ -65,6 +66,12 @@ function stopActiveAudio() {
   activeAudio = null;
 }
 function addPreview(container, file) {
+  if (file.protected) {
+    container.classList.add("protected-preview");
+    container.textContent = "🔒";
+    container.title = "パスワード保護済み（プレビュー非表示）";
+    return;
+  }
   const ext = extension(file.name);
   const url = previewUrl(file.name);
   if (imageExtensions.has(ext)) {
@@ -181,6 +188,60 @@ async function json(url, opt) {
   if (!r.ok) throw Error(d.error || "通信に失敗しました。");
   return d;
 }
+function passwordModal({ title, upload = false }) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "password-modal-overlay";
+    const dialog = document.createElement("form");
+    dialog.className = "password-modal";
+    dialog.innerHTML = `<h2></h2><p class="password-description"></p><label class="protect-toggle"><input type="checkbox"> パスワードで保護する</label><label class="password-field">パスワード<input type="password" maxlength="200" autocomplete="new-password"></label><div class="modal-actions"><button type="button" class="modal-cancel">キャンセル</button><button type="submit" class="modal-submit"></button></div>`;
+    dialog.querySelector("h2").textContent = title;
+    const toggle = dialog.querySelector(".protect-toggle");
+    const checkbox = toggle.querySelector("input");
+    const field = dialog.querySelector(".password-field");
+    const input = field.querySelector("input");
+    const description = dialog.querySelector(".password-description");
+    const submit = dialog.querySelector(".modal-submit");
+    if (upload) {
+      description.textContent = "このファイルにパスワードを設定できます。保護しない場合はそのままアップロードしてください。";
+      submit.textContent = "アップロード";
+      field.hidden = true;
+      checkbox.onchange = () => { field.hidden = !checkbox.checked; if (checkbox.checked) input.focus(); };
+    } else {
+      description.textContent = "ダウンロードするには設定されたパスワードを入力してください。";
+      submit.textContent = "ロック解除してダウンロード";
+      toggle.hidden = true;
+      checkbox.checked = true;
+      input.autocomplete = "current-password";
+    }
+    const finish = (value) => { overlay.remove(); resolve(value); };
+    dialog.querySelector(".modal-cancel").onclick = () => finish(null);
+    overlay.onclick = (event) => { if (event.target === overlay) finish(null); };
+    dialog.onsubmit = (event) => {
+      event.preventDefault();
+      const password = checkbox.checked ? input.value : "";
+      if (checkbox.checked && !password) { input.setCustomValidity("パスワードを入力してください。"); input.reportValidity(); return; }
+      finish(password);
+    };
+    input.oninput = () => input.setCustomValidity("");
+    overlay.append(dialog); document.body.append(overlay);
+    if (!upload) input.focus();
+  });
+}
+function triggerDownload(name, token = null) {
+  const a = document.createElement("a");
+  a.href = `/files/${encodeURIComponent(name)}${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+  a.download = name; document.body.append(a); a.click(); a.remove();
+}
+async function downloadFile(file) {
+  if (!file.protected) return triggerDownload(file.name);
+  const password = await passwordModal({ title: `${file.name} のロック解除` });
+  if (password === null) return;
+  const result = await json(`/api/files/${encodeURIComponent(file.name)}/unlock`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ password }),
+  });
+  triggerDownload(file.name, result.token);
+}
 function date(v) {
   return new Intl.DateTimeFormat("ja-JP", {
     dateStyle: "medium",
@@ -221,12 +282,13 @@ function sortedFiles(files) {
 }
 async function loadFiles() {
   const selectedNames = new Set(selected());
-  const { files, sharedFolder } = await json(`/api/files?t=${Date.now()}`);
+  const { files, sharedFolder, owner } = await json(`/api/files?t=${Date.now()}`);
   currentFiles = files;
+  isOwner = Boolean(owner);
   q("#sharedFolder").textContent = sharedFolder;
   fileCount.textContent = `合計 ${files.length} 件`;
   const signature = JSON.stringify(
-    files.map(({ name, size, modifiedAt }) => [name, size, modifiedAt]),
+    files.map(({ name, size, modifiedAt, protected: locked }) => [name, size, modifiedAt, locked, isOwner]),
   );
   if (signature === renderedFilesSignature) return updateSelection();
   renderedFilesSignature = signature;
@@ -247,14 +309,20 @@ async function loadFiles() {
     checkbox.checked = selectedNames.has(f.name);
     checkbox.onchange = updateSelection;
     addPreview(row.querySelector(".media-preview"), f);
-    row.querySelector("h3").textContent = f.name;
+    const heading = row.querySelector("h3");
+    heading.textContent = f.name;
+    if (f.protected) {
+      const badge = document.createElement("span"); badge.className = "protected-badge"; badge.textContent = "🔒 パスワード保護済み"; heading.append(" ", badge);
+    }
     row.querySelector(".details").textContent =
       `${f.sizeLabel} ・ ${date(f.modifiedAt)}`;
     row.querySelector(".path").textContent = f.path;
     const a = row.querySelector("a");
-    a.href = `/files/${encodeURIComponent(f.name)}`;
-    a.download = f.name;
-    row.querySelector(".reveal-file").onclick = async () => {
+    a.removeAttribute("href");
+    a.onclick = async (event) => { event.preventDefault(); try { await downloadFile(f); } catch (e) { status(e.message); } };
+    const reveal = row.querySelector(".reveal-file");
+    reveal.hidden = !isOwner;
+    reveal.onclick = async () => {
       try {
         await json(`/api/reveal/${encodeURIComponent(f.name)}`, {
           method: "POST",
@@ -329,12 +397,15 @@ async function loadPeers() {
 async function upload(files) {
   try {
     for (const f of files) {
+      const password = await passwordModal({ title: `${f.name} をアップロード`, upload: true });
+      if (password === null) continue;
       status(`${f.name} をアップロード中...`);
       await json("/api/upload", {
         method: "POST",
         headers: {
           "content-type": "application/octet-stream",
           "x-file-name": encodeURIComponent(f.name),
+          "x-file-password": encodeURIComponent(password),
         },
         body: f,
       });
@@ -371,12 +442,9 @@ bulkDownload.onclick = async () => {
   if (!names.length) return;
   status(`${names.length} 件のダウンロードを開始します。`);
   for (const name of names) {
-    const a = document.createElement("a");
-    a.href = `/files/${encodeURIComponent(name)}`;
-    a.download = name;
-    document.body.append(a);
-    a.click();
-    a.remove();
+    const file = currentFiles.find((item) => item.name === name);
+    if (!file) continue;
+    try { await downloadFile(file); } catch (e) { status(e.message); }
     await new Promise((r) => setTimeout(r, 300));
   }
 };
@@ -393,6 +461,7 @@ q("#dropzone").ondrop = (e) => {
   e.preventDefault();
   upload(e.dataTransfer.files);
 };
+if (new URL(location.href).searchParams.has("owner")) history.replaceState(null, "", location.pathname);
 heartbeat();
 setInterval(heartbeat, 10000);
 addEventListener("pagehide", () =>

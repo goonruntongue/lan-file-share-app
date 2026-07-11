@@ -57,7 +57,7 @@ async function createMainWindow() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
-  await mainWindow.loadURL(serverInstance.localUrl);
+  await mainWindow.loadURL(serverInstance.ownerUrl);
 }
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();

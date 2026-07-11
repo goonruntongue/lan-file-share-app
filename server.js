@@ -19,6 +19,12 @@ let DATA_DIR = IS_SEA ? path.dirname(process.execPath) : ROOT;
 let SHARE_DIR = path.join(DATA_DIR, "shared");
 let actualPort = PORT;
 let peerService = null;
+let ownerToken = crypto.randomBytes(32).toString("hex");
+let metadataWrite = Promise.resolve();
+const unlockTokens = new Map();
+const failedUnlocks = new Map();
+const METADATA_FILE = ".lan-file-share-metadata.json";
+const PASSWORD_ITERATIONS = 210000;
 const clients = new Map();
 const CLIENT_TIMEOUT_MS = 45000;
 const SHUTDOWN_GRACE_MS = 15000;
@@ -69,9 +75,68 @@ function sanitize(name) {
       .trim() || "file"
   );
 }
+function isReservedName(name) {
+  const clean = sanitize(name);
+  return clean === METADATA_FILE || clean.startsWith(`${METADATA_FILE}.tmp-`) || clean.startsWith(".upload-");
+}
 function safePath(name) {
+  if (isReservedName(name)) return null;
   const target = path.resolve(SHARE_DIR, sanitize(name));
   return target.startsWith(path.resolve(SHARE_DIR) + path.sep) ? target : null;
+}
+function parseCookies(req) {
+  return Object.fromEntries(String(req.headers.cookie || "").split(";").map((part) => {
+    const i = part.indexOf("=");
+    return i < 0 ? [part.trim(), ""] : [part.slice(0, i).trim(), part.slice(i + 1)];
+  }).filter(([key]) => key));
+}
+function ownerCookieName() { return `lan_share_owner_${actualPort}`; }
+function safeEqual(a, b) {
+  const left = Buffer.from(String(a || ""));
+  const right = Buffer.from(String(b || ""));
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+function isOwnerRequest(req) {
+  return safeEqual(parseCookies(req)[ownerCookieName()], ownerToken);
+}
+async function readMetadata() {
+  try {
+    const data = JSON.parse(await fsp.readFile(path.join(SHARE_DIR, METADATA_FILE), "utf8"));
+    return data && data.version === 1 && data.files ? data : { version: 1, files: {} };
+  } catch (error) {
+    if (error.code !== "ENOENT") console.warn("保護情報を読み込めませんでした:", error.message);
+    return { version: 1, files: {} };
+  }
+}
+function updateMetadata(mutator) {
+  metadataWrite = metadataWrite.then(async () => {
+    const data = await readMetadata();
+    await mutator(data.files);
+    const target = path.join(SHARE_DIR, METADATA_FILE);
+    const temp = `${target}.tmp-${process.pid}-${crypto.randomBytes(4).toString("hex")}`;
+    await fsp.writeFile(temp, JSON.stringify(data, null, 2), { mode: 0o600 });
+    await fsp.rename(temp, target);
+  });
+  return metadataWrite;
+}
+function passwordRecord(password) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.pbkdf2Sync(password, salt, PASSWORD_ITERATIONS, 32, "sha256").toString("hex");
+  return { salt, hash, iterations: PASSWORD_ITERATIONS, createdAt: new Date().toISOString() };
+}
+function verifyPassword(password, record) {
+  try {
+    const actual = crypto.pbkdf2Sync(password, record.salt, record.iterations, 32, "sha256").toString("hex");
+    return safeEqual(actual, record.hash);
+  } catch { return false; }
+}
+function readJson(req, maxBytes = 4096) {
+  return new Promise((resolve, reject) => {
+    const chunks = []; let size = 0;
+    req.on("data", (chunk) => { size += chunk.length; if (size > maxBytes) reject(new Error("入力が大きすぎます。")); else chunks.push(chunk); });
+    req.on("end", () => { try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}")); } catch { reject(new Error("入力が不正です。")); } });
+    req.on("error", reject);
+  });
 }
 function formatSize(bytes) {
   const u = ["B", "KB", "MB", "GB", "TB"];
@@ -207,8 +272,9 @@ async function listFiles() {
   await fsp.mkdir(SHARE_DIR, { recursive: true });
   const entries = await fsp.readdir(SHARE_DIR, { withFileTypes: true });
   const files = [];
+  const metadata = await readMetadata();
   for (const entry of entries) {
-    if (!entry.isFile() || entry.name.startsWith(".upload-")) continue;
+    if (!entry.isFile() || isReservedName(entry.name)) continue;
     const filePath = path.join(SHARE_DIR, entry.name);
     try {
       const stat = await fsp.stat(filePath);
@@ -219,6 +285,7 @@ async function listFiles() {
           size: stat.size,
           sizeLabel: formatSize(stat.size),
           modifiedAt: stat.mtime.toISOString(),
+          protected: Boolean(metadata.files[entry.name]),
         });
     } catch (error) {
       if (error.code !== "ENOENT")
@@ -230,6 +297,10 @@ async function listFiles() {
 
 async function serveStatic(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
+  const ownerQuery = url.searchParams.get("owner");
+  const ownerHeaders = safeEqual(ownerQuery, ownerToken)
+    ? { "set-cookie": `${ownerCookieName()}=${ownerToken}; HttpOnly; SameSite=Strict; Path=/` }
+    : {};
   const requested = decodeURIComponent(
     url.pathname === "/" ? "/index.html" : url.pathname,
   );
@@ -237,7 +308,7 @@ async function serveStatic(req, res) {
     try {
       const key = requested.replace(/^\/+/, "");
       const asset = Buffer.from(sea.getAsset(key));
-      res.writeHead(200, {
+      res.writeHead(200, { ...ownerHeaders,
         "content-type": MIME[path.extname(key)] || "application/octet-stream",
         "content-length": asset.length,
       });
@@ -254,7 +325,7 @@ async function serveStatic(req, res) {
   }
   try {
     const stat = await fsp.stat(target);
-    res.writeHead(200, {
+    res.writeHead(200, { ...ownerHeaders,
       "content-type": MIME[path.extname(target)] || "application/octet-stream",
       "content-length": stat.size,
     });
@@ -267,6 +338,10 @@ async function upload(req, res) {
   const name = sanitize(
     decodeURIComponent(String(req.headers["x-file-name"] || "")),
   );
+  if (isReservedName(name)) return sendError(res, 400, "このファイル名は使用できません。");
+  let password = "";
+  try { password = decodeURIComponent(String(req.headers["x-file-password"] || "")); } catch { return sendError(res, 400, "パスワードが不正です。"); }
+  if (password.length > 200) return sendError(res, 400, "パスワードは200文字以内にしてください。");
   await fsp.mkdir(SHARE_DIR, { recursive: true });
   const temp = path.join(
     SHARE_DIR,
@@ -284,6 +359,10 @@ async function upload(req, res) {
   out.on("finish", async () => {
     try {
       await fsp.rename(temp, dest.target);
+      if (password) {
+        try { await updateMetadata((files) => { files[dest.name] = passwordRecord(password); }); }
+        catch (error) { await fsp.rm(dest.target, { force: true }); throw error; }
+      }
       sendJson(res, 201, {
         name: dest.name,
         path: dest.target,
@@ -299,6 +378,8 @@ async function upload(req, res) {
 async function servePreview(req, res, name) {
   const target = safePath(name);
   if (!target) return sendError(res, 403, "Forbidden");
+  const metadata = await readMetadata();
+  if (metadata.files[sanitize(name)]) return sendError(res, 403, "パスワード保護されたファイルはプレビューできません。");
   try {
     const stat = await fsp.stat(target);
     const size = stat.size;
@@ -392,6 +473,7 @@ async function route(req, res) {
       return sendJson(res, 200, {
         files: await listFiles(),
         sharedFolder: SHARE_DIR,
+        owner: isOwnerRequest(req),
       });
     if (req.method === "GET" && url.pathname === "/api/info")
       return sendJson(res, 200, {
@@ -417,13 +499,46 @@ async function route(req, res) {
         decodeURIComponent(url.pathname.slice(9)),
       );
     if (req.method === "POST" && url.pathname.startsWith("/api/reveal/"))
+      if (!isOwnerRequest(req)) return sendError(res, 403, "このPC上の所有者だけがファイルの場所を開けます。");
+    if (req.method === "POST" && url.pathname.startsWith("/api/reveal/"))
       return await revealFile(
         res,
         decodeURIComponent(url.pathname.slice(12)),
       );
+    if (req.method === "POST" && url.pathname.startsWith("/api/files/") && url.pathname.endsWith("/unlock")) {
+      const encoded = url.pathname.slice(11, -7);
+      const name = sanitize(decodeURIComponent(encoded));
+      const target = safePath(name);
+      if (!target) return sendError(res, 403, "Forbidden");
+      const metadata = await readMetadata();
+      const record = metadata.files[name];
+      if (!record) return sendJson(res, 200, { token: null });
+      const key = `${req.socket.remoteAddress || "unknown"}:${name}`;
+      const now = Date.now();
+      const attempts = (failedUnlocks.get(key) || []).filter((time) => now - time < 60000);
+      if (attempts.length >= 5) return sendError(res, 429, "試行回数が多すぎます。1分後にお試しください。");
+      const body = await readJson(req);
+      if (!verifyPassword(String(body.password || ""), record)) {
+        attempts.push(now); failedUnlocks.set(key, attempts);
+        return sendError(res, 401, "パスワードが違います。");
+      }
+      failedUnlocks.delete(key);
+      const token = crypto.randomBytes(32).toString("base64url");
+      unlockTokens.set(token, { name, expires: now + 60000 });
+      return sendJson(res, 200, { token });
+    }
     if (req.method === "GET" && url.pathname.startsWith("/files/")) {
-      const target = safePath(decodeURIComponent(url.pathname.slice(7)));
+      const name = sanitize(decodeURIComponent(url.pathname.slice(7)));
+      const target = safePath(name);
+      if (!target) return sendError(res, 403, "Forbidden");
       try {
+        const metadata = await readMetadata();
+        if (metadata.files[name]) {
+          const token = String(url.searchParams.get("token") || "");
+          const grant = unlockTokens.get(token);
+          unlockTokens.delete(token);
+          if (!grant || grant.name !== name || grant.expires < Date.now()) return sendError(res, 401, "ダウンロードにはパスワードが必要です。");
+        }
         const stat = await fsp.stat(target);
         res.writeHead(200, {
           "content-type": "application/octet-stream",
@@ -439,6 +554,8 @@ async function route(req, res) {
       const target = safePath(decodeURIComponent(url.pathname.slice(11)));
       if (!target) return sendError(res, 403, "Forbidden");
       await fsp.rm(target, { force: true });
+      const name = path.basename(target);
+      await updateMetadata((files) => { delete files[name]; });
       return sendJson(res, 200, { ok: true });
     }
     if (req.method === "GET") return await serveStatic(req, res);
@@ -463,6 +580,7 @@ async function startServer(options = {}) {
     DATA_DIR = path.resolve(options.dataDirectory);
     SHARE_DIR = path.join(DATA_DIR, "shared");
   }
+  ownerToken = crypto.randomBytes(32).toString("hex");
   await fsp.mkdir(SHARE_DIR, { recursive: true });
   const server = http.createServer(route);
   for (let i = 0; i < 20; i++) {
@@ -484,6 +602,7 @@ async function startServer(options = {}) {
     url = lan.length
       ? `http://${lan[0]}:${actualPort}`
       : `http://localhost:${actualPort}`;
+  const ownerUrl = `${url}/?owner=${encodeURIComponent(ownerToken)}`;
   console.log(`LAN File Share: ${url}`);
   console.log(`Shared folder: ${SHARE_DIR}`);
   if (options.peerDiscovery) peerService = createPeerDiscovery(actualPort);
@@ -503,12 +622,13 @@ async function startServer(options = {}) {
       noClientSince = null;
     }
   }, 2000).unref();
-  if (options.openBrowser !== false) openBrowser(url);
+  if (options.openBrowser !== false) openBrowser(ownerUrl);
   return {
     server,
     port: actualPort,
     url,
     localUrl: `http://127.0.0.1:${actualPort}`,
+    ownerUrl,
     sharedFolder: SHARE_DIR,
     close() {
       clearInterval(maintenanceTimer);
