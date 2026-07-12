@@ -1,7 +1,0 @@
-{
-  "appUrl": "https://lan-file-share.pages.dev",
-  "discoveryUrl": "https://lan-file-share-discovery.goonruntongue.workers.dev",
-  "room": "lan-file-share",
-  "token": "PCとスマホで共通の参加トークンを設定してください",
-  "pwaOrigin": "https://lan-file-share.pages.dev"
-}

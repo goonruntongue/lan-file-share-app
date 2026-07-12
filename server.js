@@ -20,7 +20,6 @@ let SHARE_DIR = path.join(DATA_DIR, "shared");
 let actualPort = PORT;
 let peerService = null;
 let pwaDiscoveryService = null;
-let pwaSettings = {};
 let ownerToken = crypto.randomBytes(32).toString("hex");
 let metadataWrite = Promise.resolve();
 const unlockTokens = new Map();
@@ -66,20 +65,8 @@ function sendJson(res, status, body) {
   });
   res.end(data);
 }
-function readPwaSettings(configPath) {
-  try {
-    const settings = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    return settings && typeof settings === "object" ? settings : {};
-  } catch (error) {
-    if (error.code !== "ENOENT") console.warn("PWA設定ファイルを読み込めませんでした:", error.message);
-    return {};
-  }
-}
-function pwaSetting(envName, configName) {
-  return String(process.env[envName] ?? pwaSettings[configName] ?? "").trim();
-}
 function configuredPwaOrigins() {
-  return pwaSetting("LAN_SHARE_PWA_ORIGIN", "pwaOrigin").split(",").map((value) => value.trim()).filter(Boolean);
+  return String(process.env.LAN_SHARE_PWA_ORIGIN || "").split(",").map((value) => value.trim()).filter(Boolean);
 }
 function applyPwaCors(req, res) {
   const origin = String(req.headers.origin || "");
@@ -92,10 +79,10 @@ function applyPwaCors(req, res) {
   return true;
 }
 function pwaEnrollmentUrl() {
-  const appUrl = pwaSetting("LAN_SHARE_PWA_APP_URL", "appUrl").replace(/\/$/, "");
-  const discoveryUrl = pwaSetting("LAN_SHARE_DISCOVERY_URL", "discoveryUrl").replace(/\/$/, "");
-  const room = pwaSetting("LAN_SHARE_DISCOVERY_ROOM", "room");
-  const token = pwaSetting("LAN_SHARE_DISCOVERY_TOKEN", "token");
+  const appUrl = String(process.env.LAN_SHARE_PWA_APP_URL || "").replace(/\/$/, "");
+  const discoveryUrl = String(process.env.LAN_SHARE_DISCOVERY_URL || "").replace(/\/$/, "");
+  const room = String(process.env.LAN_SHARE_DISCOVERY_ROOM || "");
+  const token = String(process.env.LAN_SHARE_DISCOVERY_TOKEN || "");
   if (!appUrl || !discoveryUrl || !room || !token) return null;
   const url = new URL(appUrl);
   url.searchParams.set("room", room);
@@ -104,9 +91,9 @@ function pwaEnrollmentUrl() {
   return url.toString();
 }
 function createPwaDiscovery(serviceUrl) {
-  const baseUrl = pwaSetting("LAN_SHARE_DISCOVERY_URL", "discoveryUrl").replace(/\/$/, "");
-  const room = pwaSetting("LAN_SHARE_DISCOVERY_ROOM", "room");
-  const token = pwaSetting("LAN_SHARE_DISCOVERY_TOKEN", "token");
+  const baseUrl = String(process.env.LAN_SHARE_DISCOVERY_URL || "").replace(/\/$/, "");
+  const room = String(process.env.LAN_SHARE_DISCOVERY_ROOM || "");
+  const token = String(process.env.LAN_SHARE_DISCOVERY_TOKEN || "");
   if (!baseUrl || !room || !token) return null;
   const id = crypto.createHash("sha256").update(`${os.hostname()}|${DATA_DIR}`).digest("hex").slice(0, 32);
   const register = async () => {
@@ -114,7 +101,7 @@ function createPwaDiscovery(serviceUrl) {
       await fetch(`${baseUrl}/v1/rooms/${encodeURIComponent(room)}/register`, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id, name: pwaSetting("LAN_SHARE_MACHINE_NAME", "machineName") || os.hostname(), url: serviceUrl }),
+        body: JSON.stringify({ id, name: String(process.env.LAN_SHARE_MACHINE_NAME || os.hostname()).slice(0, 100), url: serviceUrl }),
       });
     } catch (error) {
       console.warn("PWA用PC一覧への登録に失敗しました:", error.message);
@@ -647,7 +634,6 @@ async function startServer(options = {}) {
     DATA_DIR = path.resolve(options.dataDirectory);
     SHARE_DIR = path.join(DATA_DIR, "shared");
   }
-  pwaSettings = readPwaSettings(options.pwaConfigPath || path.join(DATA_DIR, "lan-file-share-pwa.json"));
   ownerToken = crypto.randomBytes(32).toString("hex");
   await fsp.mkdir(SHARE_DIR, { recursive: true });
   const server = http.createServer(route);

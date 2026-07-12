@@ -405,37 +405,12 @@ async function info() {
     label.textContent = "PWA参加用QR";
     const code = document.createElement("div");
     const hint = document.createElement("p");
-    hint.textContent = "初回だけスマホPWAで読み取ってください。読み取れない場合は下の手入力情報を使えます。";
+    hint.textContent = "初回だけスマホPWAで読み取ってください";
     const joinQr = qrcode(0, "M");
     joinQr.addData(d.pwaEnrollmentUrl);
     joinQr.make();
     code.innerHTML = joinQr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
-    const manual = document.createElement("details");
-    const summary = document.createElement("summary");
-    summary.textContent = "QRが使えない場合：手入力情報を表示";
-    const values = document.createElement("div");
-    values.className = "pwa-manual-values";
-    const join = new URL(d.pwaEnrollmentUrl);
-    const entries = [["参加ルーム", join.searchParams.get("room")], ["参加トークン", join.searchParams.get("token")], ["接続先", join.searchParams.get("discovery")]];
-    for (const [name, value] of entries) {
-      const item = document.createElement("div");
-      const nameNode = document.createElement("b");
-      nameNode.textContent = name;
-      const valueNode = document.createElement("code");
-      valueNode.textContent = value || "";
-      const copy = document.createElement("button");
-      copy.type = "button";
-      copy.textContent = "コピー";
-      copy.onclick = async () => {
-        await navigator.clipboard?.writeText(value || "");
-        copy.textContent = "コピー済み";
-        setTimeout(() => { copy.textContent = "コピー"; }, 1400);
-      };
-      item.append(nameNode, valueNode, copy);
-      values.append(item);
-    }
-    manual.append(summary, values);
-    panel.append(label, code, hint, manual);
+    panel.append(label, code, hint);
     q(".qr-panel").append(panel);
   }
 }

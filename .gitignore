@@ -8,7 +8,3 @@ dist/electron-version/win-unpacked.tmp/
 dist/electron-build-tmp/
 dist/electron-version/shared/
 dist/electron-version/builder-debug.yml
-lan-file-share-pwa.json
-dist/node-version/lan-file-share-pwa.json
-dist/electron-version/lan-file-share-pwa.json
-backups/
