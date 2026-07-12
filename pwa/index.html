@@ -1,1 +1,33 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0d1720"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icons/icon.svg"><link rel="stylesheet" href="/styles.css"><title>LAN File Share</title></head><body><main><header><div class="mark">L</div><div><small>LOCAL NETWORK</small><h1>LAN FILE SHARE</h1></div><button id="install" hidden>ホーム画面に追加</button></header><section id="join"><h2>PCを探す</h2><p>PC画面のPWA参加QRを読み取るか、参加情報を入力してください。</p><input id="room" placeholder="参加ルーム"><input id="token" placeholder="参加トークン"><input id="discovery" placeholder="Cloudflare Discovery URL"><button id="save">この端末を登録</button></section><section id="peers" hidden><div class="section-head"><div><small>ONLINE PCS</small><h2>共有PC</h2></div><button id="settings">設定</button></div><div id="peer-list"></div></section><section id="files" hidden><div class="section-head"><div><small id="peer-name">SELECTED PC</small><h2>共有ファイル</h2></div><label class="upload">アップロード<input id="upload" type="file" multiple></label></div><div id="file-list"></div></section></main><template id="peer-template"><button class="peer"></button></template><template id="file-template"><article class="file"><div><h3></h3><p></p></div><button class="download">ダウンロード</button></article></template><script src="/config.js"></script><script src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0d1720">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+  <link rel="stylesheet" href="/styles.css">
+  <title>LAN File Share</title>
+</head>
+<body>
+  <main>
+    <header>
+      <img class="app-icon" src="/icons/icon-192.png" alt="LAN File Share">
+      <div class="brand"><small>LOCAL NETWORK</small><h1>LAN FILE SHARE</h1></div>
+      <div class="header-actions">
+        <button id="guide" class="icon-button" type="button" aria-label="使い方"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>説明</span></button>
+        <button id="install" type="button"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i><span>ホーム画面に追加</span></button>
+      </div>
+    </header>
+    <section id="join"><h2>PCを探す</h2><p>PC画面の「PWA参加用QR」を読み取るだけで接続できます。</p><details id="manual-join"><summary>QRが使えない場合：参加情報を手入力</summary><p>PC画面のQR下にある「手入力情報を表示」から、参加ルーム・参加トークン・接続先をコピーして入力してください。</p><input id="room" placeholder="参加ルーム"><input id="token" placeholder="参加トークン"><input id="discovery" placeholder="Cloudflare Discovery URL"><button id="save">この端末を登録</button></details></section>
+    <section id="peers" hidden><div class="section-head"><div><small>ONLINE PCS</small><h2>共有PC</h2></div><button id="settings" class="secondary" type="button">設定</button></div><div id="peer-list"></div></section>
+    <section id="files" hidden><div class="section-head"><div><small id="peer-name">SELECTED PC</small><h2>共有ファイル</h2></div><label class="upload">アップロード<input id="upload" type="file" multiple></label></div><div id="file-list"></div></section>
+  </main>
+  <template id="peer-template"><button class="peer"></button></template>
+  <template id="file-template"><article class="file"><div><h3></h3><p></p></div><button class="download">ダウンロード</button></article></template>
+  <dialog id="install-modal" class="modal"><div class="modal-content"><button class="modal-close" type="button" aria-label="閉じる"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button><i class="fa-solid fa-circle-plus modal-icon" aria-hidden="true"></i><h2>ホーム画面に追加</h2><p>このページをアプリのように起動できます。</p><div class="guide-steps"><div><i class="fa-solid fa-desktop" aria-hidden="true"></i><strong>パソコンの場合</strong><span>ブラウザのアドレスバーにあるインストールアイコンを押してください。</span></div><div><i class="fa-solid fa-mobile-screen" aria-hidden="true"></i><strong>スマホの場合</strong><span>ブラウザの共有メニューから「ホーム画面に追加」を選んでください。</span></div></div></div></dialog>
+  <dialog id="guide-modal" class="modal"><div class="modal-content"><button class="modal-close" type="button" aria-label="閉じる"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button><i class="fa-solid fa-circle-question modal-icon" aria-hidden="true"></i><h2>使い方</h2><ol class="how-to"><li>共有したいPCで LAN File Share を起動します。</li><li>PC画面のPWA参加QRをスマホで読み取ります。</li><li>表示された共有PCを選び、ファイルの閲覧・ダウンロード・アップロードを行えます。</li></ol><p class="note">ファイル本体はCloudflareに保存されず、同一Wi-Fi内のPCと直接やり取りされます。</p></div></dialog>
+  <script src="/config.js"></script><script src="/app.js"></script>
+</body>
+</html>

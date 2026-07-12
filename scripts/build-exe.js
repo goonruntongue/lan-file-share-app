@@ -12,6 +12,7 @@ const blob = join(dist, "sea-prep.blob");
 const output = join(dist, "lan-file-share.exe");
 const brandedOutput = join(dist, "lan-file-share.branded.exe");
 const icon = join(root, "assets", "app.ico");
+const pwaConfig = join(root, "lan-file-share-pwa.json");
 const postject = join(root, "node_modules", "postject", "dist", "cli.js");
 const resedit = join(root, "node_modules", "resedit-cli", "dist", "cli.js");
 
@@ -50,5 +51,6 @@ if (result.status !== 0) process.exit(result.status ?? 1);
 
 rmSync(output, { force: true });
 renameSync(brandedOutput, output);
+if (existsSync(pwaConfig)) copyFileSync(pwaConfig, join(dist, "lan-file-share-pwa.json"));
 rmSync(blob, { force: true });
 console.log("Created dist/node-version/lan-file-share.exe");

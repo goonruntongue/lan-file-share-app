@@ -1,4 +1,4 @@
-const { existsSync } = require("fs");
+const { copyFileSync, existsSync } = require("fs");
 const { join } = require("path");
 const { spawnSync } = require("child_process");
 
@@ -7,6 +7,7 @@ if (process.platform !== "win32") {
 }
 
 const root = join(__dirname, "..");
+const pwaConfig = join(root, "lan-file-share-pwa.json");
 const powershellDirectory = join(
   process.env.SystemRoot || "C:\\Windows",
   "System32",
@@ -37,4 +38,7 @@ const result = spawnSync(
     },
   },
 );
+if (result.status === 0 && existsSync(pwaConfig)) {
+  copyFileSync(pwaConfig, join(root, "dist", "electron-version", "lan-file-share-pwa.json"));
+}
 process.exit(result.status ?? 1);

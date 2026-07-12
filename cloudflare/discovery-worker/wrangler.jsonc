@@ -1,1 +1,1 @@
-{"name":"lan-file-share-discovery","main":"src/index.js","compatibility_date":"2026-07-12","durable_objects":{"bindings":[{"name":"LAN_REGISTRY","class_name":"LanRegistry"}]},"migrations":[{"tag":"v1","new_sqlite_classes":["LanRegistry"]}]}
+{"name":"lan-file-share-discovery","main":"src/index.js","compatibility_date":"2026-07-12","vars":{"PWA_ORIGIN":"https://lan-file-share.pages.dev"},"durable_objects":{"bindings":[{"name":"LAN_REGISTRY","class_name":"LanRegistry"}]},"migrations":[{"tag":"v1","new_sqlite_classes":["LanRegistry"]}]}
