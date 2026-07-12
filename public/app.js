@@ -397,22 +397,6 @@ async function info() {
   } else {
     q("#qrCode").textContent = "LAN用IPアドレスを取得できませんでした。";
   }
-  if (d.pwaEnrollmentUrl && !q("#pwaJoinPanel")) {
-    const panel = document.createElement("div");
-    panel.id = "pwaJoinPanel";
-    panel.className = "pwa-join-panel";
-    const label = document.createElement("b");
-    label.textContent = "PWA参加用QR";
-    const code = document.createElement("div");
-    const hint = document.createElement("p");
-    hint.textContent = "初回だけスマホPWAで読み取ってください";
-    const joinQr = qrcode(0, "M");
-    joinQr.addData(d.pwaEnrollmentUrl);
-    joinQr.make();
-    code.innerHTML = joinQr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
-    panel.append(label, code, hint);
-    q(".qr-panel").append(panel);
-  }
 }
 async function loadPeers() {
   const data = await json(`/api/peers?t=${Date.now()}`);
