@@ -19,6 +19,7 @@ let DATA_DIR = IS_SEA ? path.dirname(process.execPath) : ROOT;
 let SHARE_DIR = path.join(DATA_DIR, "shared");
 let actualPort = PORT;
 let peerService = null;
+let pwaDiscoveryService = null;
 let ownerToken = crypto.randomBytes(32).toString("hex");
 let metadataWrite = Promise.resolve();
 const unlockTokens = new Map();
@@ -63,6 +64,53 @@ function sendJson(res, status, body) {
     "cache-control": "no-store",
   });
   res.end(data);
+}
+function configuredPwaOrigins() {
+  return String(process.env.LAN_SHARE_PWA_ORIGIN || "").split(",").map((value) => value.trim()).filter(Boolean);
+}
+function applyPwaCors(req, res) {
+  const origin = String(req.headers.origin || "");
+  if (!configuredPwaOrigins().includes(origin)) return false;
+  res.setHeader("access-control-allow-origin", origin);
+  res.setHeader("access-control-allow-methods", "GET, POST, DELETE, OPTIONS");
+  res.setHeader("access-control-allow-headers", "authorization, content-type, x-file-name, x-file-password");
+  res.setHeader("access-control-expose-headers", "content-disposition, content-length");
+  res.setHeader("vary", "Origin");
+  return true;
+}
+function pwaEnrollmentUrl() {
+  const appUrl = String(process.env.LAN_SHARE_PWA_APP_URL || "").replace(/\/$/, "");
+  const discoveryUrl = String(process.env.LAN_SHARE_DISCOVERY_URL || "").replace(/\/$/, "");
+  const room = String(process.env.LAN_SHARE_DISCOVERY_ROOM || "");
+  const token = String(process.env.LAN_SHARE_DISCOVERY_TOKEN || "");
+  if (!appUrl || !discoveryUrl || !room || !token) return null;
+  const url = new URL(appUrl);
+  url.searchParams.set("room", room);
+  url.searchParams.set("token", token);
+  url.searchParams.set("discovery", discoveryUrl);
+  return url.toString();
+}
+function createPwaDiscovery(serviceUrl) {
+  const baseUrl = String(process.env.LAN_SHARE_DISCOVERY_URL || "").replace(/\/$/, "");
+  const room = String(process.env.LAN_SHARE_DISCOVERY_ROOM || "");
+  const token = String(process.env.LAN_SHARE_DISCOVERY_TOKEN || "");
+  if (!baseUrl || !room || !token) return null;
+  const id = crypto.createHash("sha256").update(`${os.hostname()}|${DATA_DIR}`).digest("hex").slice(0, 32);
+  const register = async () => {
+    try {
+      await fetch(`${baseUrl}/v1/rooms/${encodeURIComponent(room)}/register`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id, name: String(process.env.LAN_SHARE_MACHINE_NAME || os.hostname()).slice(0, 100), url: serviceUrl }),
+      });
+    } catch (error) {
+      console.warn("PWA用PC一覧への登録に失敗しました:", error.message);
+    }
+  };
+  register();
+  const timer = setInterval(register, 15000);
+  timer.unref();
+  return { close() { clearInterval(timer); } };
 }
 function sendError(res, status, message) {
   sendJson(res, status, { error: message });
@@ -456,6 +504,11 @@ async function revealFile(res, name) {
 async function route(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   try {
+    const pwaCors = applyPwaCors(req, res);
+    if (req.method === "OPTIONS") {
+      if (pwaCors) return res.writeHead(204).end();
+      return sendError(res, 403, "PWA origin is not allowed");
+    }
     if (req.method === "POST" && url.pathname === "/api/heartbeat") {
       const id = String(url.searchParams.get("id") || "").slice(0, 100);
       if (id) {
@@ -481,6 +534,7 @@ async function route(req, res) {
         machineName: process.env.LAN_SHARE_MACHINE_NAME || os.hostname(),
         networkUrls: addresses().map((a) => `http://${a}:${actualPort}`),
         sharedFolder: SHARE_DIR,
+        pwaEnrollmentUrl: pwaEnrollmentUrl(),
       });
     if (req.method === "GET" && url.pathname === "/api/peers")
       return sendJson(res, 200, {
@@ -606,6 +660,7 @@ async function startServer(options = {}) {
   console.log(`LAN File Share: ${url}`);
   console.log(`Shared folder: ${SHARE_DIR}`);
   if (options.peerDiscovery) peerService = createPeerDiscovery(actualPort);
+  pwaDiscoveryService = createPwaDiscovery(url);
   const maintenanceTimer = setInterval(() => {
     const now = Date.now();
     for (const [id, seenAt] of clients) {
@@ -634,6 +689,8 @@ async function startServer(options = {}) {
       clearInterval(maintenanceTimer);
       peerService?.close();
       peerService = null;
+      pwaDiscoveryService?.close();
+      pwaDiscoveryService = null;
       return new Promise((resolve) => server.close(resolve));
     },
   };
