@@ -234,6 +234,15 @@ html[data-theme="light-theme"] .status {
     box-shadow: 0 8px 25px rgba(31, 67, 75, .08);
 }
 
+html[data-theme="light-theme"] .upload-progress {
+    background: #fff;
+    box-shadow: 0 12px 35px rgba(31, 67, 75, .08);
+}
+
+html[data-theme="light-theme"] .upload-progress-track {
+    background: #e6edf0;
+}
+
 html[data-theme="light-theme"] .heading h2 {
     color: #111719;
 }

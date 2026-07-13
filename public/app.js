@@ -216,6 +216,94 @@ function status(text) {
   progress.prepend(n);
   setTimeout(() => n.remove(), 6000);
 }
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
+}
+function createUploadProgress(files) {
+  const panel = document.createElement("section");
+  panel.className = "upload-progress";
+  panel.setAttribute("aria-live", "polite");
+  panel.innerHTML = `
+    <div class="upload-progress-head">
+      <div>
+        <b class="upload-progress-title">アップロード中</b>
+        <span class="upload-progress-file"></span>
+      </div>
+      <strong class="upload-progress-percent">0%</strong>
+    </div>
+    <div class="upload-progress-track" aria-hidden="true"><span></span></div>
+    <div class="upload-progress-meta">
+      <span class="upload-progress-bytes">0 B / 0 B</span>
+      <span class="upload-progress-count">0 / 0 件</span>
+    </div>`;
+  const fill = panel.querySelector(".upload-progress-track span");
+  const title = panel.querySelector(".upload-progress-title");
+  const fileName = panel.querySelector(".upload-progress-file");
+  const percent = panel.querySelector(".upload-progress-percent");
+  const bytes = panel.querySelector(".upload-progress-bytes");
+  const count = panel.querySelector(".upload-progress-count");
+  const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+  progress.prepend(panel);
+  const update = ({ index = 0, loadedInFile = 0, currentFile = files[0], done = false }) => {
+    const completedBytes = files.slice(0, index).reduce((sum, file) => sum + file.size, 0);
+    const loaded = Math.min(completedBytes + loadedInFile, totalBytes);
+    const ratio = totalBytes ? loaded / totalBytes : 1;
+    const value = done ? 100 : Math.max(1, Math.min(99, Math.round(ratio * 100)));
+    fill.style.width = `${value}%`;
+    title.textContent = done ? "アップロード完了" : "アップロード中";
+    fileName.textContent = done ? "" : currentFile?.name || "";
+    percent.textContent = `${done ? 100 : value}%`;
+    bytes.textContent = `${formatBytes(loaded)} / ${formatBytes(totalBytes)}`;
+    count.textContent = `${Math.min(index + (done ? 0 : 1), files.length)} / ${files.length} 件`;
+  };
+  update({});
+  return {
+    update,
+    finish() {
+      update({ index: files.length, loadedInFile: 0, done: true });
+      panel.classList.add("is-complete");
+      setTimeout(() => panel.remove(), 4000);
+    },
+    fail(message) {
+      panel.classList.add("is-error");
+      title.textContent = "アップロード失敗";
+      fileName.textContent = message;
+    },
+  };
+}
+function uploadFileWithProgress(file, password, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload");
+    xhr.responseType = "json";
+    xhr.setRequestHeader("content-type", "application/octet-stream");
+    xhr.setRequestHeader("x-file-name", encodeURIComponent(file.name));
+    xhr.setRequestHeader("x-file-password", encodeURIComponent(password));
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(event.loaded);
+    };
+    xhr.onload = () => {
+      const data = xhr.response || {};
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(file.size);
+        resolve(data);
+        return;
+      }
+      reject(Error(data.error || "通信に失敗しました。"));
+    };
+    xhr.onerror = () => reject(Error("通信に失敗しました。"));
+    xhr.onabort = () => reject(Error("アップロードを中断しました。"));
+    xhr.send(file);
+  });
+}
 async function json(url, opt) {
   const r = await fetch(url, { cache: "no-store", ...opt });
   const d = await r.json().catch(() => ({}));
@@ -429,23 +517,30 @@ async function loadPeers() {
   }
 }
 async function upload(files) {
+  const fileListToUpload = [...files];
+  if (!fileListToUpload.length) return;
+  const jobs = [];
+  let uploadProgress = null;
   try {
-    for (const f of files) {
+    for (const f of fileListToUpload) {
       const password = await passwordModal({ title: `${f.name} をアップロード`, upload: true });
       if (password === null) continue;
+      jobs.push({ file: f, password });
+    }
+    if (!jobs.length) return;
+    uploadProgress = createUploadProgress(jobs.map((job) => job.file));
+    for (const [index, { file: f, password }] of jobs.entries()) {
       status(`${f.name} をアップロード中...`);
-      await json("/api/upload", {
-        method: "POST",
-        headers: {
-          "content-type": "application/octet-stream",
-          "x-file-name": encodeURIComponent(f.name),
-          "x-file-password": encodeURIComponent(password),
-        },
-        body: f,
+      uploadProgress.update({ index, loadedInFile: 0, currentFile: f });
+      await uploadFileWithProgress(f, password, (loaded) => {
+        uploadProgress.update({ index, loadedInFile: loaded, currentFile: f });
       });
     }
+    uploadProgress.finish();
+    status(`${jobs.length} 件のアップロードが完了しました。`);
     await loadFiles();
   } catch (e) {
+    uploadProgress?.fail(e.message);
     status(e.message);
   }
 }

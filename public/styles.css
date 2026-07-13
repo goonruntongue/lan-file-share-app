@@ -86,6 +86,20 @@ section { margin-top: 28px; }
 .upload-symbol { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 12px; background: var(--accent); font-size: 25px; }
 #progressArea { margin: 16px 0; }
 .status { padding: 12px 14px; border-top: 2px solid var(--accent); background: var(--surface-2); }
+.upload-progress { margin: 0 0 14px; padding: 14px 16px; border: 1px solid var(--line); border-top: 3px solid var(--accent); background: var(--surface-2); box-shadow: 0 18px 45px rgba(0,0,0,.18); }
+.upload-progress-head, .upload-progress-meta { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.upload-progress-title { display: block; font-size: 13px; letter-spacing: .08em; }
+.upload-progress-file { display: block; max-width: min(70vw, 720px); margin-top: 3px; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.upload-progress-percent { color: var(--accent); font-family: Consolas, monospace; font-size: 22px; }
+.upload-progress-track { position: relative; height: 10px; margin: 13px 0 9px; overflow: hidden; background: rgba(255,255,255,.09); }
+.upload-progress-track::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 0 36%, rgba(255,255,255,.22) 46%, transparent 56%); transform: translateX(-100%); animation: upload-sheen 1.4s linear infinite; }
+.upload-progress-track span { position: relative; z-index: 1; display: block; width: 0; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .18s ease-out; }
+.upload-progress-meta { color: var(--muted); font-family: Consolas, monospace; font-size: 12px; }
+.upload-progress.is-complete { border-top-color: #33d17a; }
+.upload-progress.is-complete .upload-progress-percent { color: #33d17a; }
+.upload-progress.is-error { border-top-color: var(--danger); }
+.upload-progress.is-error .upload-progress-percent { color: var(--danger); }
+@keyframes upload-sheen { to { transform: translateX(100%); } }
 .heading { align-items: flex-end; margin-bottom: 14px; }
 .heading h2 { margin-top: 3px; font-size: clamp(28px, 4vw, 43px); letter-spacing: -.045em; }
 #fileCount { color: var(--accent-2); font-family: Consolas, monospace; font-weight: 700; }
