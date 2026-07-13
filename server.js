@@ -41,6 +41,7 @@ const MIME = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".png": "image/png",
+  ".svg": "image/svg+xml",
   ".gif": "image/gif",
   ".webp": "image/webp",
   ".avif": "image/avif",

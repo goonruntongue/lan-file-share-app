@@ -125,6 +125,7 @@ section { margin-top: 28px; }
 .path { margin-top: 5px !important; color: #69758b; font-family: Consolas, monospace; font-size: 11px; }
 .actions { gap: 7px; }
 .actions a { border-color: var(--accent); background: var(--accent); color: #fff; }
+.folder-icon { display: block; width: 24px; height: 19px; object-fit: contain; }
 .delete-file { color: #ff7182; }
 .empty { padding: 42px; border: 1px solid var(--line); background: var(--surface); text-align: center; color: var(--muted); }
 @media (max-width: 700px) {
