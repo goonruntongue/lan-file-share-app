@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ファイルシェアアプリのダウンロード</title>
+    <link rel="shortcut icon" href="./app-icon.ico" type="image/x-icon">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./pwa-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100;300;400;500;700;900&family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+        }
+        
+        .container {
+            width: 600px;
+            max-width: 96%;
+            margin: 0 auto;
+        }
+        
+        p.card {
+            margin-top: 3em;
+        }
+        
+        .card a {
+            border-radius: 20px;
+            border: 4px solid indigo;
+            margin: 0 auto;
+            padding: 1em;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1em;
+            text-decoration: none;
+        }
+        
+        .card a:hover {
+            filter: hue-rotate(45deg) opacity(0.8);
+        }
+        
+        .card a img {
+            width: 20%;
+        }
+        
+        .card a span {
+            display: inline-block;
+            width: 80%;
+            text-align: justify;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        @media(max-width:615px) {
+            h1 .subtitle {
+                position: static;
+                display: block;
+            }
+            h1 .subtitle br {
+                display: none;
+            }
+            h1>br {
+                display: none;
+            }
+            p.card a img {
+                max-width: 30%;
+                margin: 1.5em 0 0;
+            }
+            h1 .subtitle {
+                text-align: center;
+            }
+        }
+        
+        @media(max-width:500px) {
+            .container {
+                width: 90%;
+            }
+            .card a img {
+                width: 100%;
+            }
+            .card a span {
+                width: 100%;
+            }
+            .card a {
+                flex-wrap: wrap;
+            }
+        }
+        
+        body {
+            min-height: 100vh;
+            color: #fff;
+            background: radial-gradient(#5c2f64, #260f2a);
+        }
+        
+        body::after {
+            content: "";
+            z-index: -1;
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            background: radial-gradient(#5c2f64, #260f2a);
+        }
+        
+        @keyframes hue-rot {
+            to {
+                filter: hue-rotate(90deg) brightness(2);
+            }
+        }
+        
+        .card a {
+            color: #fff;
+            border-color: #fff;
+            border-radius: 12px;
+        }
+        
+        .card {
+            border-color: #fff;
+        }
+        
+        h1 {
+            font-weight: 900;
+            font-size: 3em;
+            line-height: 1.2;
+        }
+        
+        h1 .subtitle {
+            font-weight: 300;
+            font-size: 0.5em;
+        }
+        
+        p {
+            font-weight: 300;
+        }
+        
+        body {
+            font-family: "Poppins", "Noto Sans JP", sans-serif;
+        }
+        
+        .subtitle {
+            text-align: center;
+            width: 100%;
+            display: inline-block;
+            vertical-align: super;
+            margin-top: 0px;
+        }
+        
+        h1:has(.subtitle) {
+            position: relative;
+        }
+        
+        .bar {
+            display: block;
+            width: 150px;
+            height: 5px;
+            background: rgb(225, 51, 51);
+            margin: 10px auto 5px;
+        }
+    </style>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>ファイルシェアアプリDL
+            <span class="bar"></span>
+            <span class="subtitle">
+            download file share app
+        </span>
+        </h1>
+        <p>ここからファイルシェアアプリがダウンロードできます。</p>
+        <p class="card">
+            <a href="./lan-file-share.exe" download="lan-file-share.exe">
+                <img src="./app-icon.svg">
+                <span>ファイルシェアアプリをダウンロードする</span>
+            </a>
+        </p>
+    </div>
+
+</body>
+
+</html>

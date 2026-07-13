@@ -8,3 +8,4 @@ dist/electron-version/win-unpacked.tmp/
 dist/electron-build-tmp/
 dist/electron-version/shared/
 dist/electron-version/builder-debug.yml
+fileshare-app-dl/.wrangler/
