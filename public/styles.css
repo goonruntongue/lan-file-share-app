@@ -99,6 +99,9 @@ section { margin-top: 28px; }
 .upload-progress.is-complete .upload-progress-percent { color: #33d17a; }
 .upload-progress.is-error { border-top-color: var(--danger); }
 .upload-progress.is-error .upload-progress-percent { color: var(--danger); }
+.delete-progress { border-top-color: var(--danger); }
+.delete-progress .upload-progress-percent { color: var(--danger); }
+.delete-progress .upload-progress-track span { background: linear-gradient(90deg, var(--danger), var(--accent-2)); }
 @keyframes upload-sheen { to { transform: translateX(100%); } }
 .heading { align-items: flex-end; margin-bottom: 14px; }
 .heading h2 { margin-top: 3px; font-size: clamp(28px, 4vw, 43px); letter-spacing: -.045em; }

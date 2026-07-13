@@ -279,6 +279,57 @@ function createUploadProgress(files) {
     },
   };
 }
+function createDeleteProgress(names) {
+  const panel = document.createElement("section");
+  panel.className = "upload-progress delete-progress";
+  panel.setAttribute("aria-live", "polite");
+  panel.innerHTML = `
+    <div class="upload-progress-head">
+      <div>
+        <b class="upload-progress-title">削除中</b>
+        <span class="upload-progress-file"></span>
+      </div>
+      <strong class="upload-progress-percent">0%</strong>
+    </div>
+    <div class="upload-progress-track" aria-hidden="true"><span></span></div>
+    <div class="upload-progress-meta">
+      <span class="upload-progress-bytes">通信中...</span>
+      <span class="upload-progress-count">0 / 0 件</span>
+    </div>`;
+  const fill = panel.querySelector(".upload-progress-track span");
+  const title = panel.querySelector(".upload-progress-title");
+  const fileName = panel.querySelector(".upload-progress-file");
+  const percent = panel.querySelector(".upload-progress-percent");
+  const detail = panel.querySelector(".upload-progress-bytes");
+  const count = panel.querySelector(".upload-progress-count");
+  progress.prepend(panel);
+  const update = ({ index = 0, currentName = names[0], done = false }) => {
+    const completed = done ? names.length : index;
+    const ratio = names.length ? completed / names.length : 1;
+    const value = done ? 100 : Math.max(1, Math.min(99, Math.round(ratio * 100)));
+    fill.style.width = `${value}%`;
+    title.textContent = done ? "削除完了" : "削除中";
+    fileName.textContent = done ? "" : currentName || "";
+    percent.textContent = `${done ? 100 : value}%`;
+    detail.textContent = done ? "削除が完了しました" : "サーバーからの応答を待っています";
+    count.textContent = `${done ? names.length : index} / ${names.length} 件`;
+  };
+  update({});
+  return {
+    update,
+    finish() {
+      update({ done: true });
+      panel.classList.add("is-complete");
+      setTimeout(() => panel.remove(), 4000);
+    },
+    fail(message) {
+      panel.classList.add("is-error");
+      title.textContent = "削除失敗";
+      fileName.textContent = message;
+      detail.textContent = "削除を完了できませんでした";
+    },
+  };
+}
 function uploadFileWithProgress(file, password, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -309,6 +360,26 @@ async function json(url, opt) {
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw Error(d.error || "通信に失敗しました。");
   return d;
+}
+async function deleteFilesWithProgress(names) {
+  if (!names.length) return;
+  const deleteProgress = createDeleteProgress(names);
+  try {
+    for (const [index, name] of names.entries()) {
+      deleteProgress.update({ index, currentName: name });
+      await json(`/api/files/${encodeURIComponent(name)}`, {
+        method: "DELETE",
+      });
+      deleteProgress.update({ index: index + 1, currentName: name });
+    }
+    deleteProgress.finish();
+    status(`${names.length} 件を削除しました。`);
+  } catch (e) {
+    deleteProgress.fail(e.message);
+    status(e.message);
+  } finally {
+    await loadFiles();
+  }
 }
 function passwordModal({ title, upload = false }) {
   return new Promise((resolve) => {
@@ -456,10 +527,7 @@ async function loadFiles() {
     };
     row.querySelector(".delete-file").onclick = async () => {
       if (confirm(`${f.name} を削除しますか？`)) {
-        await json(`/api/files/${encodeURIComponent(f.name)}`, {
-          method: "DELETE",
-        });
-        await loadFiles();
+        await deleteFilesWithProgress([f.name]);
       }
     };
     fileList.append(row);
@@ -554,17 +622,7 @@ bulkDelete.onclick = async () => {
   const names = selected();
   if (!names.length || !confirm(`${names.length} 件のファイルを削除しますか？`))
     return;
-  try {
-    for (const name of names)
-      await json(`/api/files/${encodeURIComponent(name)}`, {
-        method: "DELETE",
-      });
-    status(`${names.length} 件を削除しました。`);
-  } catch (e) {
-    status(e.message);
-  } finally {
-    await loadFiles();
-  }
+  await deleteFilesWithProgress(names);
 };
 bulkDownload.onclick = async () => {
   const names = selected();
