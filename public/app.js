@@ -1,5 +1,6 @@
 const q = (s) => document.querySelector(s),
   fileInput = q("#fileInput"),
+  dropzone = q("#dropzone"),
   fileList = q("#fileList"),
   fileCount = q("#fileCount"),
   progress = q("#progressArea"),
@@ -78,6 +79,20 @@ let peerSignature = "";
 const imageExtensions = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"]);
 const videoExtensions = new Set([".mp4", ".webm", ".mov", ".m4v"]);
 const audioExtensions = new Set([".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac"]);
+const fileTypeIcons = new Map([
+  [".pdf", ["PDF", "pdf"]],
+  [".html", ["HTML", "code"]], [".htm", ["HTML", "code"]],
+  [".css", ["CSS", "code"]], [".js", ["JS", "code"]], [".ts", ["TS", "code"]],
+  [".json", ["JSON", "data"]], [".xml", ["XML", "data"]], [".csv", ["CSV", "data"]],
+  [".txt", ["TXT", "text"]], [".md", ["MD", "text"]], [".log", ["LOG", "text"]],
+  [".zip", ["ZIP", "archive"]], [".rar", ["RAR", "archive"]], [".7z", ["7Z", "archive"]],
+  [".tar", ["TAR", "archive"]], [".gz", ["GZ", "archive"]],
+  [".doc", ["DOC", "word"]], [".docx", ["DOCX", "word"]],
+  [".xls", ["XLS", "sheet"]], [".xlsx", ["XLSX", "sheet"]],
+  [".ppt", ["PPT", "slide"]], [".pptx", ["PPTX", "slide"]],
+  [".exe", ["EXE", "app"]], [".msi", ["MSI", "app"]],
+  [".psd", ["PSD", "design"]], [".ai", ["AI", "design"]],
+]);
 let activeAudio = null;
 function extension(name) {
   const index = name.lastIndexOf(".");
@@ -93,6 +108,26 @@ function stopActiveAudio() {
   activeAudio.button.textContent = "▶";
   activeAudio.button.title = "再生";
   activeAudio = null;
+}
+function fileTypeIcon(ext) {
+  if (fileTypeIcons.has(ext)) {
+    const [label, kind] = fileTypeIcons.get(ext);
+    return { label, kind };
+  }
+  return {
+    label: ext ? ext.slice(1, 5).toUpperCase() : "FILE",
+    kind: "generic",
+  };
+}
+function addFileTypePreview(container, file) {
+  const ext = extension(file.name);
+  const { label, kind } = fileTypeIcon(ext);
+  const card = document.createElement("span");
+  card.className = `file-type-card file-type-${kind}`;
+  card.title = `${label} ファイル`;
+  card.innerHTML = `<b></b><small>FILE</small>`;
+  card.querySelector("b").textContent = label;
+  container.append(card);
 }
 function addPreview(container, file) {
   if (file.protected) {
@@ -194,11 +229,42 @@ function addPreview(container, file) {
     container.append(button);
     return;
   }
-  container.textContent = "□";
+  addFileTypePreview(container, file);
 }
 function createClientId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `client-${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+function isTypingTarget(element) {
+  return element?.closest?.("input, textarea, select, [contenteditable='true']");
+}
+function extensionFromMime(type) {
+  const map = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/avif": ".avif",
+  };
+  return map[type] || "";
+}
+function clipboardFileName(file, index) {
+  if (file.name) return file.name;
+  const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
+  return `clipboard-${timestamp}-${index + 1}${extensionFromMime(file.type) || ".bin"}`;
+}
+function filesFromClipboard(event) {
+  const clipboard = event.clipboardData;
+  if (!clipboard) return [];
+  const directFiles = [...clipboard.files]
+    .filter((file) => file.size > 0)
+    .map((file, index) => file.name ? file : new File([file], clipboardFileName(file, index), { type: file.type }));
+  if (directFiles.length) return directFiles;
+  return [...clipboard.items]
+    .filter((item) => item.kind === "file")
+    .map((item) => item.getAsFile())
+    .filter((file) => file && file.size > 0)
+    .map((file, index) => file.name ? file : new File([file], clipboardFileName(file, index), { type: file.type }));
 }
 const clientId = sessionStorage.getItem("lanShareClientId") || createClientId();
 sessionStorage.setItem("lanShareClientId", clientId);
@@ -642,12 +708,20 @@ sortOrder.onchange = () => {
   loadFiles().catch((e) => status(e.message));
 };
 ["dragenter", "dragover"].forEach((x) =>
-  q("#dropzone").addEventListener(x, (e) => e.preventDefault()),
+  dropzone.addEventListener(x, (e) => e.preventDefault()),
 );
-q("#dropzone").ondrop = (e) => {
+dropzone.ondrop = (e) => {
   e.preventDefault();
   upload(e.dataTransfer.files);
 };
+document.addEventListener("paste", (event) => {
+  if (isTypingTarget(event.target)) return;
+  const files = filesFromClipboard(event);
+  if (!files.length) return;
+  event.preventDefault();
+  status(`${files.length} 件をクリップボードから貼り付けました。`);
+  upload(files);
+});
 if (new URL(location.href).searchParams.has("owner")) history.replaceState(null, "", location.pathname);
 heartbeat();
 setInterval(heartbeat, 10000);
